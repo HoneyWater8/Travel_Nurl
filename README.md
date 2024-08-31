@@ -36,6 +36,7 @@
 2. **가상 환경 만들기**
 
 `python3 -m venv venv`
+
 3. 가상 환경 활성화하기
 - Linux / macOS:
 `source venv/bin/activate`
@@ -44,6 +45,7 @@
 4. 의존성 설치하기
 
 `pip install -r requirements.txt`
+
 5. 설정 파일 추가하기
 - app 파일에 config.yml 파일을 생성합니다.
 - 이후 각 팀원을 공유한 파일을 config.yml 파일에 붙여넣기 바랍니다.
