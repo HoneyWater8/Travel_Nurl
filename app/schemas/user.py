@@ -1,27 +1,23 @@
-from pydantic import BaseModel, EmailStr, FileUrl
+from typing import Optional
+from pydantic import BaseModel, EmailStr, HttpUrl
 from datetime import datetime
-from bson import ObjectId
 
 
-class UserBase(BaseModel):
-    id: str  # ObjectId를 문자열로 변환하여 저장
-    kakaoid: str  # 카카오 아이디가 있을 경우 추가.
-    username: str
+## 회원 가입할 때 사용.
+## 사용 목적 : 데이터의 유효성 검사와 직렬화를 위해서., 주로 요청 본문이나 응답의 형식을 정의할 때 사용.
+class User(BaseModel):
+    id: str
+    nickname: str
+    password: Optional[str]
     email: EmailStr
-    thumbnail_image_url: FileUrl
-    profile_image_url: FileUrl
+
+
+class UserCreate(User):
+    hashed_password: str  # 비밀번호는 평문으로 받음
     created_at: datetime  # 생성일자
     updated_at: datetime  # 수정일자
 
 
-class UserCreate(UserBase):
-    password: str  # 비밀번호는 평문으로 받음
-
-    class Config:
-        # MongoDB ObjectId를 JSON 직렬화 가능하게 설정
-        json_encoders = {ObjectId: str}
-
-
-class User(UserBase):
-    class Config:
-        from_attributes = True  # ORM 모델과 호환성 설정
+class UserInKakao(User):
+    thumbnail_image_url: HttpUrl
+    profile_image_url: HttpUrl

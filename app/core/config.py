@@ -10,8 +10,13 @@ class Settings(BaseSettings):  # type: ignore
     KAKAO_CLIENT_ID: str
     KAKAO_CLIENT_SECRET: str
     KAKAO_REDIRECT_URL: str
+    KAKAO_LOGOUT_REDIRECT_URI: str
     DATABASE_URL: str
     COSMOS_KEY: str
+    SESSION_KEY: str
+    COSMOS_KEY: str
+    COSMOS_BLOB_CONNECTION_KEY: str
+    COSMOS_END_POINT: str
 
 
 def load_config():

@@ -3,29 +3,10 @@ from app.services.data_visitkorea import execute_sparql_query
 
 router = APIRouter()
 
-SPARQL_ENDPOINT = "http://data.visitkorea.or.kr/sparql"
-
-PREFIX = """    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX dc: <http://purl.org/dc/elements/1.1/>
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-    PREFIX vi: <http://www.saltlux.com/transformer/views#>
-    PREFIX kto: <http://data.visitkorea.or.kr/ontology/>
-    PREFIX ktop: <http://data.visitkorea.or.kr/property/>
-    PREFIX ids: <http://data.visitkorea.or.kr/resource/>
-    PREFIX wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
-    PREFIX f: <http://www.saltlux.com/geo/functions#>
-    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-    PREFIX geo: <http://www.saltlux.com/geo/property#>
-"""
-
 
 @router.get("/api/get_detail_place")
 async def get_detail_place(place_name: str):
     query = f"""
-{PREFIX}
 
 SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
 WHERE {{
@@ -45,7 +26,7 @@ WHERE {{
 GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
 """
     try:
-        data = await execute_sparql_query(SPARQL_ENDPOINT, query)
+        data = await execute_sparql_query(query)
         # 결과 파싱 및 JSON 형태로 변환
         parsed_data = []
 

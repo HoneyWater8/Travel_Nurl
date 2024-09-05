@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File
+""" from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import HTMLResponse
 from app.services.place_service import PlaceService
 
@@ -29,3 +29,4 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
         )
 
     return data
+ """
