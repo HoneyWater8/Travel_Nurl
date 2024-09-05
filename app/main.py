@@ -1,16 +1,23 @@
 from fastapi import FastAPI, HTTPException
-from app.routers import place, user, external, visitkorea
+from app.routers import user_router, external_router, place_router, visitkorea_router
 from app.database import ping_mongodb
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
+from app.core.config import settings
 
 app = FastAPI()
 
 # CORS 설정
 origins = [
-    "http://127.0.0.1:8000",
     "http://localhost:8000",  # FastAPI 서버 주소
 ]
+## session 관리를 위한 추가.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SESSION_KEY,
+)
 
+## 다른 도메인에서 호스팅되는 리소스에 접근할 수 있도록 하기 위함.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -20,10 +27,11 @@ app.add_middleware(
 )
 
 # 라우터 포함
-app.include_router(place.router)
-app.include_router(external.router)  # 외부 API 라우터 포함
-app.include_router(visitkorea.router)
-app.include_router(user.router)
+# app.include_router(ai_rt.router) # 다른 기능 만들 때까지 정지.
+app.include_router(external_router)  # 외부 API 라우터 포함
+app.include_router(place_router)
+app.include_router(user_router)
+app.include_router(visitkorea_router)
 
 
 @app.get("/ping")
