@@ -25,6 +25,9 @@ build/
 
 # 환경 설정 파일
 app/config.yml
+Travel_Nuri_v1
+package
+config.env
 
 # 기타
 *.tmp
@@ -32,3 +35,4 @@ app/config.yml
 app/AI/*.md
 app/AI/*.txt
 app/AI/*.py
+fastapi_lambda.zip

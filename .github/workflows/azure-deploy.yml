@@ -1,0 +1,49 @@
+name: Deploy FastAPI to Azure
+
+on:
+  push:
+    branches:
+      - main  # 배포할 브랜치
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'  # 원하는 Python 버전
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          # 테스트를 실행하는 명령어
+          pytest  # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
+
+      - name: Deploy to Azure
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: 'YOUR_APP_NAME'
+          slot-name: 'production'
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+        env:
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+          DEBUG: ${{ secrets.DEBUG }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          SESSION_KEY: ${{ secrets.SESSION_KEY }}
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+          COSMOS_BLOB_CONNECTION_KEY: ${{ secrets.COSMOS_BLOB_CONNECTION_KEY }}
+          COSMOS_END_POINT: ${{ secrets.COSMOS_END_POINT }}

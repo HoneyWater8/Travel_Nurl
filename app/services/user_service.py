@@ -6,13 +6,17 @@ from app.models.user import UserInDB, KakaoUserInDB
 from fastapi import HTTPException
 from datetime import datetime
 import httpx
-from app.core.config import settings
+from app.core.config import kakao_settings
 
 
 class UserService:
     def __init__(self, db=database):
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self.db = db
+        self.kakao_client_id = kakao_settings.KAKAO_CLIENT_ID
+        self.kakao_client_secret = kakao_settings.KAKAO_CLIENT_SECRET
+        self.kakao_redirect_url = kakao_settings.KAKAO_REDIRECT_URL
+        self.kakao_logout_redirect_url = kakao_settings.KAKAO_LOGOUT_REDIRECT_URI
 
     # 사용자 등록 메소드
     async def register_user(self, user: User) -> UserInDB:
@@ -81,7 +85,7 @@ class UserService:
 
     async def logout(self):
         # 카카오 로그아웃 URL을 호출하여 로그아웃 처리
-        logout_url = f"https://kauth.kakao.com/oauth/logout?client_id={settings.KAKAO_CLIENT_ID}&logout_redirect_uri={settings.KAKAO_LOGOUT_REDIRECT_URI}"
+        logout_url = f"https://kauth.kakao.com/oauth/logout?client_id={self.kakao_client_id}&logout_redirect_uri={self.kakao_redirect_url}"
         async with httpx.AsyncClient() as client:
             await client.get(logout_url)
 
@@ -90,10 +94,10 @@ class UserService:
         token_request_url = "https://kauth.kakao.com/oauth/token"
         token_request_payload = {
             "grant_type": "authorization_code",
-            "client_id": settings.KAKAO_CLIENT_ID,
-            "redirect_uri": settings.KAKAO_REDIRECT_URL,
+            "client_id": self.kakao_client_id,
+            "redirect_uri": self.kakao_redirect_url,
             "code": code,
-            "client_secret": settings.KAKAO_CLIENT_SECRET,
+            "client_secret": self.kakao_client_secret,
         }
 
         async with httpx.AsyncClient() as client:
@@ -106,7 +110,7 @@ class UserService:
         url = "https://kauth.kakao.com/oauth/token"
         payload = {
             "grant_type": "refresh_token",
-            "client_id": settings.KAKAO_CLIENT_ID,
+            "client_id": self.kakao_client_id,
             "refresh_token": refresh_token,
         }
 

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Form
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from app.core.config import settings
 from app.services.user_service import UserService
 from app.schemas.user import User, UserInKakao
 
@@ -25,7 +24,7 @@ async def register(user: User):
 @router.get("/auth/kakao")
 async def kakao_login(request: Request):
     scope = "profile_nickname,profile_image,account_email"
-    authorizationUrl = f"https://kauth.kakao.com/oauth/authorize?client_id={settings.KAKAO_CLIENT_ID}&redirect_uri={settings.KAKAO_REDIRECT_URL}&response_type=code&scope={scope}"
+    authorizationUrl = f"https://kauth.kakao.com/oauth/authorize?client_id={userService.kakao_client_id}&redirect_uri={userService.kakao_redirect_url}&response_type=code&scope={scope}"
     return RedirectResponse(url=authorizationUrl)  # type: ignore
 
 
