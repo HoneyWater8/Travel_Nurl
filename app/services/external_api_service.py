@@ -1,11 +1,14 @@
 import httpx
-from app.core.config import settings
+from app.core.config import base_settings
+
 
 class ExternalAPIService:
     def __init__(self):
         self.base_url = "http://apis.data.go.kr/B551011/KorService1/locationBasedList1"
-   
-    async def get_nearby_tourlist(self, latitude: float, longitude: float, contenttype: int, radius: int):
+
+    async def get_nearby_tourlist(
+        self, latitude: float, longitude: float, contenttype: int, radius: int
+    ):
         query = {
             "numOfRows": 100,
             "pageNo": 1,
@@ -18,9 +21,9 @@ class ExternalAPIService:
             "mapY": latitude,
             "radius": radius,
             "contentTypeId": contenttype,
-            "serviceKey": settings.SERVICE_KEY,
+            "serviceKey": base_settings.SERVICE_KEY,
         }
-    
+
         async with httpx.AsyncClient() as client:
             # Request 객체 생성
             request = httpx.Request("GET", self.base_url, params=query)
