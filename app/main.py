@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import base_settings
 from dotenv import load_dotenv
-from mangum import Mangum  # Lambda 배포를 위한 패키징 모듈
 
 load_dotenv(dotenv_path="config.env")  # .env 파일의 환경 변수를 로드합니다.
 
@@ -57,4 +56,7 @@ def read_root():
     return {"message": "Welcome to the FastAPI application!"}
 
 
-handler = Mangum(app)
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="127.0.0.1", port=8000)
