@@ -31,10 +31,15 @@ jobs:
           # 테스트를 실행하는 명령어
           pytest  # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
 
+      - name: Run FastAPI with Uvicorn
+        run: |
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 5  # 서버 시작 대기
+          
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'YOUR_APP_NAME'
+          app-name: 'Travel_Nuri_instance'
           slot-name: 'production'
           publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
         env:
