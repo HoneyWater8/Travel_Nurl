@@ -75,4 +75,14 @@ jobs:
         with:
           app-name: 'ria-test'
           slot-name: 'Production'
-          
+              
+        env:
+          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
+          DEBUG: ${{ secrets.DEBUG }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
+          SESSION_KEY: ${{ secrets.SESSION_KEY }}
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+          COSMOS_BLOB_CONNECTION_KEY: ${{ secrets.COSMOS_BLOB_CONNECTION_KEY }}
+          COSMOS_END_POINT: ${{ secrets.COSMOS_END_POINT }}
