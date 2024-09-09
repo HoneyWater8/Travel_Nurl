@@ -3,10 +3,10 @@ name: Deploy FastAPI to Azure
 on:
   push:
     branches:
-      - main  # 배포할 브랜치
+      - dev  # 배포할 브랜치
   pull_request:
     branches:
-      - main
+      - dev
 
 jobs:
   build:
@@ -29,19 +29,26 @@ jobs:
       - name: Run tests
         run: |
           # 테스트를 실행하는 명령어
-          pytest  # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
+          pytest --fail # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
 
       - name: Run FastAPI with Uvicorn
         run: |
-          nohup uvicorn main:app --host 0.0.0.0 --port 8000 &
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
           sleep 5  # 서버 시작 대기
-          
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E582E5D1B3CD4B1FB4B15FE6D4D25ED0 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C4C4CE4DF0A1449B901B666A47FAE087 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_23EE5D2064E74FF084704558659C99C8 }}          
+
+
       - name: Deploy to Azure
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'Travel_Nuri_instance'
+          app-name: 'Travel-Nuri-instance'
           slot-name: 'production'
-          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
         env:
           SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
           DEBUG: ${{ secrets.DEBUG }}
