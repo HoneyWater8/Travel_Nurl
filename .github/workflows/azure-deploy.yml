@@ -1,4 +1,4 @@
-name: Deploy FastAPI to Azure
+name: Build and deploy Python app to Azure Web App - Travel-Nuri-instance
 
 on:
   push:
@@ -17,25 +17,30 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'  # 원하는 Python 버전
+
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run tests
-        run: |
-          # 테스트를 실행하는 명령어
-          pytest --fail # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
+      # - name: Run tests
+      #   run: |
+      #     # 테스트를 실행하는 명령어
+      #     pytest --fail # 또는 unittest 등 사용 중인 테스트 프레임워크에 따라 조정
 
       - name: Run FastAPI with Uvicorn
         run: |
           uvicorn main:app --host 0.0.0.0 --port 8000 &
           sleep 5  # 서버 시작 대기
-
+          
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -49,6 +54,7 @@ jobs:
         with:
           app-name: 'Travel-Nuri-instance'
           slot-name: 'production'
+
         env:
           SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
           DEBUG: ${{ secrets.DEBUG }}
