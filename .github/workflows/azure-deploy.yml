@@ -51,17 +51,18 @@ jobs:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
-      id-token: write # This is required for requesting the JWT
+      id-token: write #This is required for requesting the JWT
 
     steps:
       - name: Download artifact from build job
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: python-app
 
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
+      
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -75,14 +76,3 @@ jobs:
         with:
           app-name: 'Travel-Nuri-instance'
           slot-name: 'Production'
-
-        env:
-          SERVICE_KEY: ${{ secrets.SERVICE_KEY }}
-          DEBUG: ${{ secrets.DEBUG }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          KAKAO_CLIENT_ID: ${{ secrets.KAKAO_CLIENT_ID }}
-          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
-          SESSION_KEY: ${{ secrets.SESSION_KEY }}
-          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
-          COSMOS_BLOB_CONNECTION_KEY: ${{ secrets.COSMOS_BLOB_CONNECTION_KEY }}
-          COSMOS_END_POINT: ${{ secrets.COSMOS_END_POINT }}
