@@ -12,6 +12,7 @@ class BaseSettings:
         self.SESSION_KEY: str = self.get_env("SESSION_KEY")
 
     def get_env(self, key: str) -> str:
+        print(key)
         value = os.getenv(key)
         if value is None:
             value = os.getenv("APPSETTING_" + key)
