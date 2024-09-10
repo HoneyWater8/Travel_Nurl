@@ -4,7 +4,6 @@ from app.database import ping_mongodb
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import base_settings
-import uvicorn
 
 
 app = FastAPI()
@@ -13,10 +12,7 @@ session_key = base_settings.SERVICE_KEY
 if session_key is None:
     raise ValueError("SESSION_KEY 환경 변수가 설정되어야 합니다.")
 
-# CORS 설정
-origins = [
-    "http://localhost:8000",  # FastAPI 서버 주소
-]
+
 ## session 관리를 위한 추가.
 app.add_middleware(SessionMiddleware, secret_key=session_key)
 

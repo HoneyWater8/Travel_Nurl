@@ -6,7 +6,7 @@ motor==3.5.1
 passlib==1.7.4
 pymongo==4.8.0
 pytest==8.3.2
-python-dotenv==1.0.1
+python-dotenv
 PyYAML==6.0.2
 SPARQLWrapper==2.0.0
 starlette==0.38.5
