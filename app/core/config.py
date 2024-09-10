@@ -15,7 +15,9 @@ class BaseSettings:
     def get_env(self, key: str) -> str:
         value = os.getenv(key)
         if value is None:
-            raise ValueError(f"Environment variable '{key}' not set")
+            value = os.getenv("APPSETTING_" + key)
+            if value is None:
+                raise ValueError(f"Environment variable '{key}' not set")
         return value
 
 
