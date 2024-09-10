@@ -28,7 +28,7 @@ build/
 app/config.yml
 Travel_Nuri_v1
 package
-config.env
+*.env
 
 # 기타
 *.tmp

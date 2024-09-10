@@ -2,11 +2,10 @@
 from dotenv import load_dotenv
 import os
 
-load_dotenv(dotenv_path="config.env")
-
 
 class BaseSettings:
     def __init__(self):
+        load_dotenv(".env")
         self.SERVICE_KEY: str = self.get_env("SERVICE_KEY")
         self.DEBUG: bool = self.get_env("DEBUG").lower() == "true"
         self.DATABASE_URL: str = self.get_env("DATABASE_URL")
