@@ -2,12 +2,12 @@ from fastapi import APIRouter, HTTPException
 from app.models.place import PlaceItem, PlaceResponse
 from app.services.external_api_service import ExternalAPIService
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["Tourapi"])
 
 external_service = ExternalAPIService()
 
 
-@router.get("/api/get_nearby_tourlist/")
+@router.get("/get_nearby_tourlist/")
 async def get_nearby_tourlist(
     latitude: float, longitude: float, contenttype: int = 12, radius: int = 1000
 ):
