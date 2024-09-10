@@ -1,15 +1,14 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.server_api import ServerApi
-from app.core.config import base_settings
+from app.core.config import mongo_settings
 from app.services.place_service import PlaceService
 
-uri = base_settings.DATABASE_URL
+uri = mongo_settings.DATABASE_URL
 
 # Create a new client and connect to the server
 client = AsyncIOMotorClient(uri, server_api=ServerApi("1"))
-database = client.Test
-db = client["Test"]
-user_collection = db["test"]
+database = client["Test"]
+user_collection = database["test"]
 
 
 # Send a ping to confirm a successful connection

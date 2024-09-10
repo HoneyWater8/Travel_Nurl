@@ -1,6 +1,5 @@
 from typing import Optional
 from pydantic import BaseModel, EmailStr, HttpUrl
-from datetime import datetime
 
 
 ## 회원 가입할 때 사용.
@@ -8,16 +7,26 @@ from datetime import datetime
 class User(BaseModel):
     id: str
     nickname: str
-    password: Optional[str]
     email: EmailStr
 
 
+# UserLogin 스키마
+class UserLogin(BaseModel):
+    identifier: str  # 이메일 또는 아이디
+    password: str
+
+
 class UserCreate(User):
-    hashed_password: str  # 비밀번호는 평문으로 받음
-    created_at: datetime  # 생성일자
-    updated_at: datetime  # 수정일자
+    password: str  # 비밀번호는 평문으로 받음
 
 
 class UserInKakao(User):
     thumbnail_image_url: HttpUrl
     profile_image_url: HttpUrl
+
+    def dict(self, **kwargs):
+        # HttpUrl을 문자열로 변환
+        data = super().model_dump(**kwargs)
+        data["thumbnail_image_url"] = str(data["thumbnail_image_url"])
+        data["profile_image_url"] = str(data["profile_image_url"])
+        return data
