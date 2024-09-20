@@ -58,6 +58,11 @@ jobs:
         with:
           name: python-app
 
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: '11' # 필요한 JDK 버전을 설정하세요.
+
       - name: Unzip artifact for deployment
         run: unzip release.zip
 

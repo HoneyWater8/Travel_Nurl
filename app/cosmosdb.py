@@ -1,6 +1,7 @@
 from azure.cosmos import CosmosClient  # Azure Cosmos DB와 상호작용하기 위한 클라이언트
 from azure.storage.blob import (
     BlobServiceClient,
+    ContainerClient,
 )  # Azure Blob Storage와 상호작용하기 위한 클라이언트
 from dotenv import load_dotenv
 from app.core.config import cosmos_settings
@@ -10,11 +11,12 @@ load_dotenv(dotenv_path="config.env")  # .env 파일의 환경 변수를 로드�
 # Cosmos DB 설정
 cosmos_database_name = "ImageDatabase"  # 사용할 Cosmos DB 데이터베이스 이름
 image_container_name = "ImageTable"  # 사용할 Cosmos DB 컨테이너 이름
+embedding_container_name = "embedding-container-travelnuri"
 
 
 ## CLient를 가져오는 메소드
 # Cosmos Client를 가져오는 메소드
-def get_cosmos_client():
+def get_cosmos_client() -> CosmosClient:
     endpoint = cosmos_settings.COSMOS_END_POINT
     key = cosmos_settings.COSMOS_KEY
 
@@ -27,7 +29,7 @@ def get_cosmos_client():
 
 
 ## Blob 클라이언트 서비스를 가져오는 메서드
-def get_blob_service_client():
+def get_blob_service_client() -> BlobServiceClient:
     connection_string = cosmos_settings.COSMOS_BLOB_CONNECTION_KEY
 
     if connection_string is None:
@@ -39,6 +41,12 @@ def get_blob_service_client():
 
 
 ## 컨테이너를 가져오는 메서드
-def get_blob_container_client():
+def get_blob_container_client() -> ContainerClient:
     blob_service_client = get_blob_service_client()
     return blob_service_client.get_container_client(image_container_name)
+
+
+## 컨테이너를 가져오는 메서드
+def get_blob_container_client2() -> ContainerClient:
+    blob_service_client = get_blob_service_client()
+    return blob_service_client.get_container_client(embedding_container_name)

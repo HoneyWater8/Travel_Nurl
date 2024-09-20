@@ -3,7 +3,7 @@ from app.models.place import PlaceItem, PlaceResponse
 from app.services.place_service import PlaceService
 from app.cosmosdb import get_cosmos_client
 
-placeService = PlaceService(get_cosmos_client())
+placeService = PlaceService()
 
 router = APIRouter(prefix="/api", tags=["api"])
 

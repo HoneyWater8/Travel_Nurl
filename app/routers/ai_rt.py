@@ -1,12 +1,13 @@
-""" from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import HTMLResponse
-from app.services.place_service import PlaceService
+from app.services.ai_service import ImageAIService
 
-router = APIRouter()
+router = APIRouter(prefix="/ai", tags=["AI"])
+image_ai = ImageAIService()
 
 
 @router.post("/find-similar-image/")
-async def find_similar_image(user_image: UploadFile = File(...), user_text: str = None):  # type: ignore
+async def find_similar_image(user_image: UploadFile = File(...), user_text: str = None, region_ids: str = None, category_ids: str = None, top_N: int = 5):  # type: ignore
 
     data = {"similar_places": []}
 
@@ -15,18 +16,12 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
     with open(user_image_path, "wb") as f:
         f.write(await user_image.read())
 
-    image, top_N_scores = PlaceService.find_similar_image(
-        user_image_path, user_text, top_N=5
+    image = image_ai.find_similar_image(
+        user_image_path=user_image_path,
+        user_text=user_text,
+        region_ids=region_ids,
+        category_ids=category_ids,
+        top_N=top_N,
     )
 
-    # 결과 HTML 반환
-    for id, score in zip(image, top_N_scores):
-        data["similar_places"].append(
-            {
-                "image": image[id],
-                "score": score,
-            }
-        )
-
-    return data
- """
+    return image
