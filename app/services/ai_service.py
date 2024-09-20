@@ -1,136 +1,259 @@
-""" import numpy as np
+import numpy as np
 import pandas as pd
 import torch
+import cv2
+from retinaface import RetinaFace
 from PIL import Image
-from torchvision import models, transforms
+import torchvision.models as models
+import torchvision.transforms as transforms
 from konlpy.tag import Okt
 from sklearn.metrics.pairwise import cosine_similarity
-import ast
-from azure.cosmos import CosmosClient
-from app.core.config import settings
 from pathlib import Path
-from app.cosmosdb import cosmos_database_name, cosmos_endpoint, image_container_name
-
-# ResNet50 모델과 디바이스 설정
-device = "cuda" if torch.cuda.is_available() else "cpu"
-resnet50_model = models.resnet50(weights="DEFAULT").to(device)
-resnet50_model.eval()
-
-
-# 이미지 전처리 설정
-preprocess = transforms.Compose(
-    [
-        transforms.Resize(256),
-        transforms.CenterCrop(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-    ]
+from app.cosmosdb import (
+    get_cosmos_client,
+    get_blob_container_client,
+    get_blob_container_client2,
+    cosmos_database_name,
+    image_container_name,
 )
-
-# 파일 경로 설정
-embeddings_csv_path = Path("app/AI/Embeddings.csv")
-keywords_csv_path = Path("app/AI/1_810.csv")
-
-# 임베딩 및 키워드 데이터 로드
-embeddings_df = pd.read_csv(embeddings_csv_path)
-keywords_df = pd.read_csv(keywords_csv_path)
-okt = Okt()
+import io
+import aiohttp
 
 
-def parse_embeddings(embedding_str):
-    try:
-        return np.array(ast.literal_eval(embedding_str))
-    except (ValueError, SyntaxError):
-        return np.array([])
+class ImageAIService:
+    def __init__(self):
+        self.cosmos_client = get_cosmos_client()
+        self.database = self.cosmos_client.get_database_client(cosmos_database_name)
+        self.image_container = self.database.get_container_client(image_container_name)
+        self.blob_container_client = get_blob_container_client()
+        self.blob_container_client2 = get_blob_container_client2()
+        self.resnet50_model = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.preprocess = self._get_preprocess_transform()
 
+        self.all_image_embeddings = None
+        self.embeddings_df = None
+        self.keywords_df = None
 
-embeddings_df["ImageEmbeddings"] = embeddings_df["ImageEmbeddings"].apply(parse_embeddings)  # type: ignore 해당 부분 주의하기
-all_image_embeddings = np.vstack(embeddings_df["ImageEmbeddings"].values)  # type: ignore
+        self.okt = Okt()
 
+    async def _load_embedding(self):
+        try:
+            async with aiohttp.ClientSession() as session:
+                blob_client = self.blob_container_client2.get_blob_client(
+                    "Embeddings.npy"
+                )
+                blob_data = blob_client.download_blob().readall()
+                return np.load(io.BytesIO(blob_data))
+        except Exception as e:
+            print(f"Error loading embeddings: {e}")
+            return None
 
-class AiService:
-    @staticmethod
-    def get_image_features(image_path):
-        image = Image.open(image_path).convert("RGB")
-        image_input = preprocess(image).unsqueeze(0).to(device)
+    async def _load_embedding_csv(self):
+        try:
+            async with aiohttp.ClientSession() as session:
+                blob_client = self.blob_container_client2.get_blob_client(
+                    "Embeddings.csv"
+                )
+                blob_data = blob_client.download_blob().readall()
+                return pd.read_csv(io.BytesIO(blob_data))
+        except Exception as e:
+            print(f"Error loading embeddings CSV: {e}")
+            return None
+
+    async def _load_place(self):
+        try:
+            async with aiohttp.ClientSession() as session:
+                blob_client = self.blob_container_client2.get_blob_client("1_13023.csv")
+                blob_data = blob_client.download_blob().readall()
+                return pd.read_csv(io.BytesIO(blob_data))
+        except Exception as e:
+            print(f"Error loading place data: {e}")
+            return None
+
+    def _load_model(self):
+        if self.resnet50_model is None:
+            self.resnet50_model = models.resnet50(weights="DEFAULT").to(self.device)
+            self.resnet50_model.eval()
+
+    def _get_preprocess_transform(self):
+        return transforms.Compose(
+            [
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+    async def get_image_features(self, image_path):
+        self._load_model()
+        try:
+            image = Image.open(image_path).convert("RGB")
+        except IOError as e:
+            print(f"Error opening image: {e}")
+            return None
+
+        image_input = self.preprocess(image).unsqueeze(0).to(self.device)
+
         with torch.no_grad():
-            image_features = resnet50_model(image_input)
-        return image_features.cpu().numpy()
+            if self.resnet50_model is not None:
+                image_features = self.resnet50_model(image_input)
+                return image_features.cpu().numpy()
+            else:
+                print("Model is not loaded.")
+                return None
 
-    @staticmethod
-    def extract_nouns(text):
-        return set(okt.nouns(text))
+    def extract_nouns_and_adjectives(self, text):
+        file_path = Path("app/AI/stopword_ko.txt")
+        with open(file_path, encoding="utf-8") as f:
+            stopwords = set(line.strip() for line in f)
 
-    @staticmethod
-    def retrieve_image_info_from_cosmos(image_ids):
-        cosmos_client = CosmosClient(cosmos_endpoint, settings.COSMOS_KEY)
-        database = cosmos_client.get_database_client(cosmos_database_name)
-        image_container = database.get_container_client(image_container_name)
+        pos_tagged = self.okt.pos(text)
+        nouns_and_adjectives = [
+            word for word, pos in pos_tagged if pos in ["Noun", "Adjective"]
+        ]
+        return set(word for word in nouns_and_adjectives if word not in stopwords)
+
+    async def retrieve_image_names_from_cosmos(self, image_ids):
         image_names = {}
         for image_id in image_ids:
             query = f"SELECT * FROM c WHERE c.ImageID = {image_id}"
             items = list(
-                image_container.query_items(query, enable_cross_partition_query=True)
+                self.image_container.query_items(
+                    query, enable_cross_partition_query=True
+                )
             )
             if items:
-                image_names[image_id] = {
-                    "ImageName": items[0]["ImageName"],
-                    "PlaceName": items[0][
-                        "PlaceName"
-                    ],  # items[0]에서 PlaceName을 가져옴
-                    "ImageUrl": items[0]["ImageURL"],
-                }
+                image_names[image_id] = items[0]["ImageName"]
+            else:
+                print(f"No image name found for ImageID {image_id}")
+
         return image_names
 
-    @staticmethod
-    def find_similar_image(user_image_path, user_text=None, top_N=5):
-        # 이미지 특징 추출
-        user_image_features = PlaceService.get_image_features(user_image_path)
+    def blur_faces(self, image):
+        img_array = np.array(image)
+        faces = RetinaFace.detect_faces(img_array)
 
-        # 기본적으로 모든 임베딩을 포함
-        relevant_embeddings_df = embeddings_df
+        if isinstance(faces, dict):
+            for face in faces.values():
+                facial_area = face["facial_area"]
+                x1, y1, x2, y2 = facial_area
+
+                mask = np.zeros_like(img_array, dtype=np.uint8)
+                mask = cv2.ellipse(
+                    mask,
+                    ((x1 + x2) // 2, (y1 + y2) // 2),
+                    ((x2 - x1) // 2, (y2 - y1) // 2),
+                    0,
+                    0,
+                    360,
+                    (255, 255, 255),
+                    -1,
+                )
+
+                blurred_face = cv2.GaussianBlur(img_array[y1:y2, x1:x2], (99, 99), 30)
+
+                img_array = cv2.bitwise_and(img_array, 255 - mask)
+                mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
+                img_array[y1:y2, x1:x2] += mask_face
+
+        return Image.fromarray(img_array)
+
+    async def find_similar_image(
+        self,
+        user_image_path: str = "",
+        user_text: str = "",
+        region_ids: str = "",
+        category_ids: str = "",
+        top_N: int = 5,
+    ):
+        try:
+            self.all_image_embeddings = await self._load_embedding()
+            self.embeddings_df = await self._load_embedding_csv()
+            self.keywords_df = await self._load_place()
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            return None
+
+        if self.embeddings_df is None:
+            print("Embeddings DataFrame is None.")
+            return None
+
+        if self.all_image_embeddings is None:
+            print("All image embeddings are None.")
+            return None
+
+        if self.keywords_df is None:
+            print("Keywords DataFrame is None.")
+            return None
+
+        user_image_features = await self.get_image_features(user_image_path)
+        if user_image_features is None:
+            return
+
+        image_id_to_index = {
+            image_id: idx for idx, image_id in enumerate(self.embeddings_df["ImageID"])
+        }
+
+        relevant_embeddings_df = self.embeddings_df
+        if region_ids:
+            region_ids_set = set(map(int, region_ids.split(",")))
+            relevant_embeddings_df = relevant_embeddings_df[
+                relevant_embeddings_df["RegionID"].isin(region_ids_set)
+            ]
+
+        if category_ids:
+            category_ids_set = set(map(int, category_ids.split(",")))
+            relevant_embeddings_df = relevant_embeddings_df[
+                relevant_embeddings_df["CategoryID"].isin(category_ids_set)
+            ]
+
+        filtered_image_ids = relevant_embeddings_df["PlaceID"].tolist()
+        filtered_keywords_df = self.keywords_df[
+            self.keywords_df["PlaceID"].isin(filtered_image_ids)
+        ]
 
         if user_text:
-            # 사용자 텍스트에서 명사 추출
-            user_nouns = PlaceService.extract_nouns(user_text)
+            user_keyword = self.extract_nouns_and_adjectives(user_text)
+            filtered_keywords_df = filtered_keywords_df[
+                filtered_keywords_df["개요"]
+                .fillna("")
+                .apply(lambda x: any(noun in x for noun in user_keyword))
+                | filtered_keywords_df["명칭"]
+                .fillna("")
+                .apply(lambda x: any(noun in x for noun in user_keyword))
+            ]
 
-            # 개요 열을 필터링하여 명사 포함 여부 확인
-            keywords_df["개요"] = keywords_df["개요"].fillna(
-                ""
-            )  # 개요 열의 결측값을 빈 문자열로 채움
-            filtered_keywords_df = keywords_df[
-                keywords_df["개요"].apply(
-                    lambda x: any(noun in x for noun in user_nouns)
-                )
-            ]  # 사용자가 입력한 명사와 일치하는 개요 필터링
+            if filtered_keywords_df.empty:
+                print("No relevant keywords found.")
+                return None
 
-            if not filtered_keywords_df.empty:
-                # 필터링된 키워드에 해당하는 PlaceID 추출
-                relevant_place_ids = filtered_keywords_df["PlaceID"].unique()
+            relevant_place_ids = filtered_keywords_df["PlaceID"].unique()
+            relevant_embeddings_df = self.embeddings_df[
+                self.embeddings_df["PlaceID"].isin(relevant_place_ids)
+            ]
 
-                # 해당 PlaceID를 가진 임베딩만 필터링
-                relevant_embeddings_df = embeddings_df[
-                    embeddings_df["PlaceID"].isin(relevant_place_ids)
-                ].reset_index(drop=True)
+            if relevant_embeddings_df.empty:
+                print("No relevant embeddings found after keyword filtering.")
+                return None
 
-            # 관련 이미지 임베딩을 수직으로 쌓아 numpy 배열로 변환
-        relevant_embeddings = np.vstack(relevant_embeddings_df["ImageEmbeddings"].values)  # type: ignore
+        relevant_image_ids = relevant_embeddings_df["ImageID"].tolist()
+        relevant_indices = [
+            image_id_to_index[image_id]
+            for image_id in relevant_image_ids
+            if image_id in image_id_to_index
+        ]
+        relevant_embeddings = self.all_image_embeddings[relevant_indices]
 
-        # 사용자 이미지와 관련 이미지 간의 코사인 유사도 계산
         similarity_scores = cosine_similarity(relevant_embeddings, user_image_features)
 
-        # 유사도 점수를 기준으로 인덱스를 정렬하고 상위 N개의 인덱스 선택
         top_N_indices = np.argsort(similarity_scores.flatten())[-top_N:]
+        top_image_ids = [
+            relevant_embeddings_df.iloc[idx]["ImageID"] for idx in top_N_indices
+        ]
 
-        # 상위 N개의 유사도 점수 추출
-        top_N_scores = similarity_scores.flatten()[top_N_indices]
-
-        # 상위 N개의 인덱스를 사용하여 해당 이미지 ID 추출
-        top_image_ids = relevant_embeddings_df.iloc[top_N_indices]["ImageID"].tolist()
-
-        # 추출한 이미지 ID를 사용하여 이미지 이름과 장소 이름을 가져옴
-        image_names = PlaceService.retrieve_image_info_from_cosmos(top_image_ids)
-
-        # 이미지 이름과 상위 N개의 유사도 점수를 반환
-        return image_names, top_N_scores
- """
+        # Cosmos DB에서 ImageName을 조회
+        return await self.retrieve_image_names_from_cosmos(top_image_ids)
