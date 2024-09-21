@@ -8,7 +8,7 @@ placeService = PlaceService()
 router = APIRouter(prefix="/api", tags=["api"])
 
 
-@router.post("/api/tourist-images")
+@router.get("/tourist-images")
 async def get_random_image(num: int):
     """
     #### 랜덤으로 숫자를 가져오는 api
