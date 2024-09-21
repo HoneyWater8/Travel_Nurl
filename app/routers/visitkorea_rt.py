@@ -4,7 +4,7 @@ from app.services.data_visitkorea import execute_sparql_query
 router = APIRouter(prefix="/api", tags=["Tourapi"])
 
 
-@router.get("/api/get_detail_place")
+@router.get("/get_detail_place")
 async def get_detail_place(place_name: str):
     """
     # Tourapi 데이터 베이스로부터 지역 정보를 가져오는 api
