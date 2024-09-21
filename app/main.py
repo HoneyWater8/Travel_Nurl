@@ -25,7 +25,7 @@ app.add_middleware(SessionMiddleware, secret_key=session_key)
 ## 다른 도메인에서 호스팅되는 리소스에 접근할 수 있도록 하기 위함.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 필요한 도메인으로 변경
+    allow_origins=["http://localhost:3000"],  # 허용할 출처
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
