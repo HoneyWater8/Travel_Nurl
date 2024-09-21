@@ -13,8 +13,8 @@ from typing import List
 
 
 class PlaceService:
-    def __init__(self, cosmos_client: CosmosClient):
-        self.cosmos_client = cosmos_client
+    def __init__(self):
+        self.cosmos_client = get_cosmos_client()
         self.database = self.cosmos_client.get_database_client(cosmos_database_name)
         self.container = self.database.get_container_client(image_container_name)
         self.blob_container_client = get_blob_container_client()

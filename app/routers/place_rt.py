@@ -3,15 +3,19 @@ from app.models.place import PlaceItem, PlaceResponse
 from app.services.place_service import PlaceService
 from app.cosmosdb import get_cosmos_client
 
-placeService = PlaceService(get_cosmos_client())
+placeService = PlaceService()
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["api"])
 
 
 @router.post("/api/tourist-images")
-async def get_random_image():
+async def get_random_image(num: int):
+    """
+    #### 랜덤으로 숫자를 가져오는 api
+    num : 가져오고자 하는 사진의 갯수 입력.
+    """
     try:
-        items = await placeService.get_random_images(5)
+        items = await placeService.get_random_images(num)
         if not items:
             raise HTTPException(status_code=404, detail="No images found")
         return items

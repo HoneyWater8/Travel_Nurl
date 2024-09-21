@@ -3,9 +3,12 @@ from datetime import datetime
 
 
 class UserBase(BaseModel):
-    id: str  # ObjectId를 문자열로 변환하여 저장
+    id: str
     nickname: str
     email: EmailStr
+
+    class Config:
+        from_attributes = True
 
 
 class UserInDB(UserBase):

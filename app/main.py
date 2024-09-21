@@ -1,5 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from app.routers import user_router, external_router, place_router, visitkorea_router
+from app.routers import (
+    user_router,
+    external_router,
+    place_router,
+    visitkorea_router,
+    ai_router,
+)
 from app.database import ping_mongodb
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -26,7 +32,7 @@ app.add_middleware(
 )
 
 # 라우터 포함
-# app.include_router(ai_rt.router) # 다른 기능 만들 때까지 정지.
+app.include_router(ai_router)  # 다른 기능 만들 때까지 정지.
 app.include_router(external_router)  # 외부 API 라우터 포함
 app.include_router(place_router)
 app.include_router(user_router)

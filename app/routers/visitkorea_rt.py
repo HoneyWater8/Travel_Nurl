@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from app.services.data_visitkorea import execute_sparql_query
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["Tourapi"])
 
 
 @router.get("/api/get_detail_place")
 async def get_detail_place(place_name: str):
+    """
+    # Tourapi 데이터 베이스로부터 지역 정보를 가져오는 api
+    - place_name: 찾으려고 하는 장소의 이름.
+    """
+
     query = f"""
 
 SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
