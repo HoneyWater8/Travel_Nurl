@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 import pandas as pd
 import torch
 import cv2
@@ -257,3 +257,4 @@ class ImageAIService:
 
         # Cosmos DB에서 ImageName을 조회
         return await self.retrieve_image_names_from_cosmos(top_image_ids)
+ """
