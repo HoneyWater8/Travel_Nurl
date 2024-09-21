@@ -11,6 +11,7 @@ ENV/
 .venv/
 .env/
 testNuri2
+testNuri3
 
 # 패키지 관리 파일
 *.egg-info/
@@ -28,7 +29,7 @@ build/
 app/config.yml
 Travel_Nuri_v1
 package
-config.env
+*.env
 
 # 기타
 *.tmp
