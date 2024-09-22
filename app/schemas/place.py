@@ -4,7 +4,7 @@ from typing import List, Optional
 
 ## Image 클래스
 class ImageBase(BaseModel):
-    img_name: str
+    img_name: Optional[str] = None
     img_url: str
 
 
@@ -22,5 +22,6 @@ class PlaceCreate(PlaceBase):
     pass
 
 
-class Place(PlaceBase):
-    description: Optional[str] = None
+class PlaceInfo(PlaceBase):
+    address: str
+    description: str

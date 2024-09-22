@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from app.services.data_visitkorea import execute_sparql_query
+from app.services.data_visitkorea import search_place, search_places
+from app.schemas.place import PlaceInfo
 
 router = APIRouter(prefix="/api", tags=["Tourapi"])
 
@@ -11,27 +12,8 @@ async def get_detail_place(place_name: str):
     - place_name: 찾으려고 하는 장소의 이름.
     """
 
-    query = f"""
-
-SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
-WHERE {{
-    ?resource a kto:Place ;
-               foaf:name ?name ;
-               ktop:address ?address ;
-               rdfs:label "{place_name}"@ko .
-
-    OPTIONAL {{ ?resource ktop:petsAvailable ?petsAvailable }}
-    OPTIONAL {{ ?resource ktop:tel ?tel }}
-    OPTIONAL {{ ?resource ktop:creditCard ?creditCard }}
-    OPTIONAL {{ ?resource ktop:parking ?parking }}
-    OPTIONAL {{ ?resource wgs:lat ?lat }}
-    OPTIONAL {{ ?resource wgs:long ?long }}
-    OPTIONAL {{ ?resource foaf:depiction ?depiction }}
-}}
-GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
-"""
     try:
-        data = await execute_sparql_query(query)
+        data = await search_place(place_name)
         # 결과 파싱 및 JSON 형태로 변환
         parsed_data = []
 
@@ -57,5 +39,20 @@ GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
         return parsed_data
     except HTTPException as e:
         raise e  # HTTPException을 그대로 전달
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/get_random-place")
+async def get_random_place():
+    """
+    #### 랜덤으로 숫자를 가져오는 api
+    num : 가져오고자 하는 사진의 갯수 입력.
+    """
+    try:
+        items: list[PlaceInfo] = await search_places()
+        if not items:
+            raise HTTPException(status_code=404, detail="No images found")
+        return items
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
