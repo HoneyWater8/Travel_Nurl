@@ -1,7 +1,8 @@
-""" from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.ai_service import ImageAIService
 import tempfile
 import os
+import pinecone
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 image_ai = ImageAIService()
@@ -26,8 +27,8 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
         image = await image_ai.find_similar_image(
             user_image_path=temp_image_path,
             user_text=user_text,
-            region_ids=region_ids,
-            category_ids=category_ids,
+            region_id=region_ids,
+            category_id=category_ids,
             top_N=top_N,
         )
 
@@ -40,4 +41,3 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
             os.remove(temp_image_path)
 
     return image
- """

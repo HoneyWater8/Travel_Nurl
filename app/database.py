@@ -3,7 +3,7 @@ from pymongo.server_api import ServerApi
 from app.core.config import mongo_settings
 from app.services.place_service import PlaceService
 
-uri = mongo_settings.DATABASE_URL
+uri = mongo_settings.DB_URL
 
 # Create a new client and connect to the server
 client = AsyncIOMotorClient(uri, server_api=ServerApi("1"))

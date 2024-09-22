@@ -24,27 +24,35 @@ class BaseSettings:
 
 class KakaoSettings(BaseSettings):
     def load_env_variables(self):
-        self.KAKAO_CLIENT_ID = self.get_env("KAKAO_CLIENT_ID")
-        self.KAKAO_CLIENT_SECRET = self.get_env("KAKAO_CLIENT_SECRET")
-        self.KAKAO_REDIRECT_URL = self.get_env("KAKAO_REDIRECT_URL")
-        self.KAKAO_LOGOUT_REDIRECT_URI = self.get_env("KAKAO_LOGOUT_REDIRECT_URI")
+        self.CLIENT_ID = self.get_env("KAKAO_CLIENT_ID")
+        self.CLIENT_SECRET = self.get_env("KAKAO_CLIENT_SECRET")
+        self.REDIRECT_URL = self.get_env("KAKAO_REDIRECT_URL")
+        self.LOGOUT_REDIRECT_URI = self.get_env("KAKAO_LOGOUT_REDIRECT_URI")
 
 
 class CosmosSettings(BaseSettings):
     def load_env_variables(self):
-        self.COSMOS_KEY = self.get_env("COSMOS_KEY")
-        self.COSMOS_BLOB_CONNECTION_KEY = self.get_env("COSMOS_BLOB_CONNECTION_KEY")
-        self.COSMOS_END_POINT = self.get_env("COSMOS_END_POINT")
+        self.KEY = self.get_env("COSMOS_KEY")
+        self.BLOB_CONNECTION_KEY = self.get_env("COSMOS_BLOB_CONNECTION_KEY")
+        self.END_POINT = self.get_env("COSMOS_END_POINT")
 
 
 class MongoSettings(BaseSettings):
     def load_env_variables(self):
-        self.DATABASE_URL = self.get_env("DATABASE_URL")
-        self.DATABASE = self.get_env("DATABASE")
+        self.DB_URL = self.get_env("DATABASE_URL")
+        self.DB = self.get_env("DATABASE")
         self.USER_COLLECTION = self.get_env("USER_COLLECTION")
 
 
+class PineconeSettings(BaseSettings):
+    def load_env_variables(self):
+        self.key = self.get_env("PINECONE_KEY")
+        self.environment = "us-east-1"
+        self.index_name = "travelnuri"
+
+
 # 설정 인스턴스 생성
+pinecone_settins = PineconeSettings()
 cosmos_settings = CosmosSettings()
 kakao_settings = KakaoSettings()
 mongo_settings = MongoSettings()

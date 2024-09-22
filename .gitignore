@@ -35,6 +35,5 @@ package
 *.tmp
 *.temp
 app/AI/*.md
-app/AI/*.txt
 app/AI/*.py
 fastapi_lambda.zip

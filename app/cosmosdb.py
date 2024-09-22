@@ -17,8 +17,8 @@ embedding_container_name = "embedding-container-travelnuri"
 ## CLient를 가져오는 메소드
 # Cosmos Client를 가져오는 메소드
 def get_cosmos_client() -> CosmosClient:
-    endpoint = cosmos_settings.COSMOS_END_POINT
-    key = cosmos_settings.COSMOS_KEY
+    endpoint = cosmos_settings.END_POINT
+    key = cosmos_settings.KEY
 
     if endpoint is None or key is None:
         raise ValueError(
@@ -30,7 +30,7 @@ def get_cosmos_client() -> CosmosClient:
 
 ## Blob 클라이언트 서비스를 가져오는 메서드
 def get_blob_service_client() -> BlobServiceClient:
-    connection_string = cosmos_settings.COSMOS_BLOB_CONNECTION_KEY
+    connection_string = cosmos_settings.BLOB_CONNECTION_KEY
 
     if connection_string is None:
         raise ValueError(

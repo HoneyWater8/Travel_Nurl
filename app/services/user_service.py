@@ -15,9 +15,9 @@ class UserService:
         self.pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self.db = database
         self.collection = self.db[mongo_settings.USER_COLLECTION]
-        self.kakao_client_id = kakao_settings.KAKAO_CLIENT_ID
-        self.kakao_client_secret = kakao_settings.KAKAO_CLIENT_SECRET
-        self.kakao_redirect_url = kakao_settings.KAKAO_REDIRECT_URL
+        self.kakao_client_id = kakao_settings.CLIENT_ID
+        self.kakao_client_secret = kakao_settings.CLIENT_SECRET
+        self.kakao_redirect_url = kakao_settings.REDIRECT_URL
 
     async def authenticate_user(self, identifier: str, password: str):
         try:
