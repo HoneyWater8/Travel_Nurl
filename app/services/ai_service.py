@@ -1,5 +1,4 @@
-""" import numpy as np
-import pandas as pd
+import numpy as np
 import torch
 import cv2
 from retinaface import RetinaFace
@@ -7,7 +6,6 @@ from PIL import Image
 import torchvision.models as models
 import torchvision.transforms as transforms
 from konlpy.tag import Okt
-from sklearn.metrics.pairwise import cosine_similarity
 from pathlib import Path
 from app.cosmosdb import (
     get_cosmos_client,
@@ -16,8 +14,8 @@ from app.cosmosdb import (
     cosmos_database_name,
     image_container_name,
 )
-import io
-import aiohttp
+from pinecone import Pinecone, ServerlessSpec
+from app.core.config import pinecone_settins
 
 
 class ImageAIService:
@@ -30,46 +28,10 @@ class ImageAIService:
         self.resnet50_model = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.preprocess = self._get_preprocess_transform()
-
-        self.all_image_embeddings = None
-        self.embeddings_df = None
-        self.keywords_df = None
-
+        # Pinecone 초기화
+        self.pc = Pinecone(api_key=pinecone_settins.key)
+        self.pinecone_index = self.pc.Index(pinecone_settins.index_name)
         self.okt = Okt()
-
-    async def _load_embedding(self):
-        try:
-            async with aiohttp.ClientSession() as session:
-                blob_client = self.blob_container_client2.get_blob_client(
-                    "Embeddings.npy"
-                )
-                blob_data = blob_client.download_blob().readall()
-                return np.load(io.BytesIO(blob_data))
-        except Exception as e:
-            print(f"Error loading embeddings: {e}")
-            return None
-
-    async def _load_embedding_csv(self):
-        try:
-            async with aiohttp.ClientSession() as session:
-                blob_client = self.blob_container_client2.get_blob_client(
-                    "Embeddings.csv"
-                )
-                blob_data = blob_client.download_blob().readall()
-                return pd.read_csv(io.BytesIO(blob_data))
-        except Exception as e:
-            print(f"Error loading embeddings CSV: {e}")
-            return None
-
-    async def _load_place(self):
-        try:
-            async with aiohttp.ClientSession() as session:
-                blob_client = self.blob_container_client2.get_blob_client("1_13023.csv")
-                blob_data = blob_client.download_blob().readall()
-                return pd.read_csv(io.BytesIO(blob_data))
-        except Exception as e:
-            print(f"Error loading place data: {e}")
-            return None
 
     def _load_model(self):
         if self.resnet50_model is None:
@@ -115,38 +77,32 @@ class ImageAIService:
         nouns_and_adjectives = [
             word for word, pos in pos_tagged if pos in ["Noun", "Adjective"]
         ]
-        return set(word for word in nouns_and_adjectives if word not in stopwords)
-
-    async def retrieve_image_names_from_cosmos(self, image_ids):
-        image_names = {}
-        for image_id in image_ids:
-            query = f"SELECT * FROM c WHERE c.ImageID = {image_id}"
-            items = list(
-                self.image_container.query_items(
-                    query, enable_cross_partition_query=True
-                )
-            )
-            if items:
-                image_names[image_id] = items[0]["ImageName"]
-            else:
-                print(f"No image name found for ImageID {image_id}")
-
-        return image_names
+        return set(
+            word for word in nouns_and_adjectives if word not in stopwords
+        )  # 불용어 제외
 
     def blur_faces(self, image):
         img_array = np.array(image)
+
+        # RetinaFace를 사용하여 얼굴 감지
         faces = RetinaFace.detect_faces(img_array)
 
-        if isinstance(faces, dict):
-            for face in faces.values():
+        if isinstance(faces, dict):  # 감지된 얼굴이 있을 경우
+            for face_key in faces.keys():
+                face = faces[face_key]
                 facial_area = face["facial_area"]
                 x1, y1, x2, y2 = facial_area
 
+                # 얼굴 중심점과 크기 계산
+                center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
+                width, height = x2 - x1, y2 - y1
+
+                # 원형 또는 타원형 마스크 생성 (이 예제에서는 타원형)
                 mask = np.zeros_like(img_array, dtype=np.uint8)
                 mask = cv2.ellipse(
                     mask,
-                    ((x1 + x2) // 2, (y1 + y2) // 2),
-                    ((x2 - x1) // 2, (y2 - y1) // 2),
+                    (center_x, center_y),
+                    (width // 2, height // 2),
                     0,
                     0,
                     360,
@@ -154,8 +110,10 @@ class ImageAIService:
                     -1,
                 )
 
+                # 블러 처리된 얼굴 영역
                 blurred_face = cv2.GaussianBlur(img_array[y1:y2, x1:x2], (99, 99), 30)
 
+                # 원형 또는 타원형 마스크를 적용하여 블러 처리된 얼굴과 원본 이미지 합성
                 img_array = cv2.bitwise_and(img_array, 255 - mask)
                 mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
                 img_array[y1:y2, x1:x2] += mask_face
@@ -166,95 +124,105 @@ class ImageAIService:
         self,
         user_image_path: str = "",
         user_text: str = "",
-        region_ids: str = "",
-        category_ids: str = "",
+        region_id: str = "",
+        category_id: str = "",
         top_N: int = 5,
     ):
-        try:
-            self.all_image_embeddings = await self._load_embedding()
-            self.embeddings_df = await self._load_embedding_csv()
-            self.keywords_df = await self._load_place()
-        except Exception as e:
-            print(f"Error loading data: {e}")
-            return None
 
-        if self.embeddings_df is None:
-            print("Embeddings DataFrame is None.")
-            return None
-
-        if self.all_image_embeddings is None:
-            print("All image embeddings are None.")
-            return None
-
-        if self.keywords_df is None:
-            print("Keywords DataFrame is None.")
-            return None
-
+        # 이미지 특성 추출
         user_image_features = await self.get_image_features(user_image_path)
         if user_image_features is None:
+            print("Failed to extract image features. Exiting.")
             return
 
-        image_id_to_index = {
-            image_id: idx for idx, image_id in enumerate(self.embeddings_df["ImageID"])
+        # Pinecone에서 필터 조건에 맞는 전체 결과 검색
+        query_results = self.pinecone_index.query(
+            vector=user_image_features.flatten().tolist(),
+            top_k=10000,  # 최대 10,000개의 결과를 가져옴
+            include_metadata=True,
+        )
+
+        filtered_count = len(query_results["matches"])
+        print(f"Initial results count: {filtered_count}")
+
+        if filtered_count == 0:
+            print("No relevant images found based on the provided filters.")
+            return
+
+        # RegionID 필터링
+        if region_id:
+            region_ids_set = set(map(str, region_id.split(",")))
+            query_results["matches"] = [
+                match
+                for match in query_results["matches"]
+                if match["metadata"].get("RegionID") in region_ids_set
+            ]
+            print(
+                f"Filtered results count after RegionID filter: {len(query_results['matches'])}"
+            )
+
+        # CategoryID 필터링
+        if category_id:
+            category_ids_set = set(map(str, category_id.split(",")))
+            query_results["matches"] = [
+                match
+                for match in query_results["matches"]
+                if match["metadata"].get("CategoryID") in category_ids_set
+            ]
+            print(
+                f"Filtered results count after CategoryID filter: {len(query_results['matches'])}"
+            )
+
+        # 텍스트 필터링을 위해 overview를 가져옴
+        filtered_matches = query_results["matches"]  # 기본적으로 필터링된 이미지 목록
+
+        user_keywords = self.extract_nouns_and_adjectives(user_text)
+        if len(user_keywords) == 0:
+            print("No nouns or adjectives recognized.")
+            print("Ignoring user_text.")
+
+        if user_text and user_keywords:  # user_text가 있을 때만 필터링 수행
+            # overview 기반 필터링
+            filtered_matches = [
+                match
+                for match in filtered_matches
+                if any(
+                    keyword in match["metadata"].get("overview", "")
+                    for keyword in user_keywords
+                )
+            ]
+
+        final_filtered_count = len(filtered_matches)
+        print(
+            f"Filtered results count after applying text filter: {final_filtered_count}"
+        )
+
+        if final_filtered_count == 0:
+            print("No relevant images found after text-based filtering.")
+            return
+
+        # 최종 상위 N개의 결과로 제한
+        top_image_ids = []
+        top_N_scores = []
+        place_ids = []
+        region_ids = []
+        category_ids = []
+
+        for match in filtered_matches[:top_N]:
+            top_image_ids.append(match["id"])
+            top_N_scores.append(match["score"])
+            place_ids.append(match["metadata"].get("PlaceID"))
+            region_ids.append(match["metadata"].get("RegionID"))
+            category_ids.append(match["metadata"].get("CategoryID"))
+
+        print(f"Top {top_N} most similar images found after all filters:")
+        for image_id, score in zip(top_image_ids, top_N_scores):
+            print(f"ImageID: {image_id}, Similarity Score: {score}")
+
+        return {
+            "top_image_ids": top_image_ids,
+            "top_N_scores": top_N_scores,
+            "place_ids": place_ids,
+            "region_ids": region_ids,
+            "category_ids": category_ids,
         }
-
-        relevant_embeddings_df = self.embeddings_df
-        if region_ids:
-            region_ids_set = set(map(int, region_ids.split(",")))
-            relevant_embeddings_df = relevant_embeddings_df[
-                relevant_embeddings_df["RegionID"].isin(region_ids_set)
-            ]
-
-        if category_ids:
-            category_ids_set = set(map(int, category_ids.split(",")))
-            relevant_embeddings_df = relevant_embeddings_df[
-                relevant_embeddings_df["CategoryID"].isin(category_ids_set)
-            ]
-
-        filtered_image_ids = relevant_embeddings_df["PlaceID"].tolist()
-        filtered_keywords_df = self.keywords_df[
-            self.keywords_df["PlaceID"].isin(filtered_image_ids)
-        ]
-
-        if user_text:
-            user_keyword = self.extract_nouns_and_adjectives(user_text)
-            filtered_keywords_df = filtered_keywords_df[
-                filtered_keywords_df["개요"]
-                .fillna("")
-                .apply(lambda x: any(noun in x for noun in user_keyword))
-                | filtered_keywords_df["명칭"]
-                .fillna("")
-                .apply(lambda x: any(noun in x for noun in user_keyword))
-            ]
-
-            if filtered_keywords_df.empty:
-                print("No relevant keywords found.")
-                return None
-
-            relevant_place_ids = filtered_keywords_df["PlaceID"].unique()
-            relevant_embeddings_df = self.embeddings_df[
-                self.embeddings_df["PlaceID"].isin(relevant_place_ids)
-            ]
-
-            if relevant_embeddings_df.empty:
-                print("No relevant embeddings found after keyword filtering.")
-                return None
-
-        relevant_image_ids = relevant_embeddings_df["ImageID"].tolist()
-        relevant_indices = [
-            image_id_to_index[image_id]
-            for image_id in relevant_image_ids
-            if image_id in image_id_to_index
-        ]
-        relevant_embeddings = self.all_image_embeddings[relevant_indices]
-
-        similarity_scores = cosine_similarity(relevant_embeddings, user_image_features)
-
-        top_N_indices = np.argsort(similarity_scores.flatten())[-top_N:]
-        top_image_ids = [
-            relevant_embeddings_df.iloc[idx]["ImageID"] for idx in top_N_indices
-        ]
-
-        # Cosmos DB에서 ImageName을 조회
-        return await self.retrieve_image_names_from_cosmos(top_image_ids)
- """

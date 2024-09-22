@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from SPARQLWrapper import SPARQLWrapper, JSON
+from app.schemas.place import PlaceInfo, ImageBase
 
 SPARQL_ENDPOINT = "http://data.visitkorea.or.kr/sparql"
 
@@ -18,6 +19,80 @@ PREFIX = """    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
     PREFIX foaf: <http://xmlns.com/foaf/0.1/>
     PREFIX geo: <http://www.saltlux.com/geo/property#>
 """
+
+
+async def search_place(place_name: str) -> dict:
+    query = f"""
+
+SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
+WHERE {{
+    ?resource a kto:Place ;
+               foaf:name ?name ;
+               ktop:address ?address ;
+               rdfs:label "{place_name}"@ko .
+
+    OPTIONAL {{ ?resource ktop:petsAvailable ?petsAvailable }}
+    OPTIONAL {{ ?resource ktop:tel ?tel }}
+    OPTIONAL {{ ?resource ktop:creditCard ?creditCard }}
+    OPTIONAL {{ ?resource ktop:parking ?parking }}
+    OPTIONAL {{ ?resource wgs:lat ?lat }}
+    OPTIONAL {{ ?resource wgs:long ?long }}
+    OPTIONAL {{ ?resource foaf:depiction ?depiction }}
+}}
+GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
+"""
+    return await execute_sparql_query(query)
+
+
+async def search_places(num: int = 1):
+    # SPARQL 쿼리 작성
+    query = f"""
+    SELECT ?resource ?name ?address ?description ?depiction
+    WHERE {{
+        ?resource a kto:Place ;
+                rdfs:label ?name ;
+                ktop:address ?address ;
+                dc:description ?description ;
+                foaf:depiction ?depiction .
+        FILTER(
+            (CONTAINS(lcase(?description), "관광") || 
+            CONTAINS(lcase(?name), "관광")) &&
+            (STRENDS(str(?depiction), ".jpg") || 
+            STRENDS(str(?depiction), ".JPG") || 
+            STRENDS(str(?depiction), ".png") || 
+            STRENDS(str(?depiction), ".PNG") || 
+            STRENDS(str(?depiction), ".gif") || 
+            STRENDS(str(?depiction), ".GIF"))
+        )
+    }}
+    ORDER BY RAND()
+    LIMIT {num}
+    """
+    results = await execute_sparql_query(query)
+
+    response: list[PlaceInfo] = []
+
+    # 결과 파싱
+    for result in results["results"]["bindings"]:
+        resource = result.get("resource", {}).get("value", "None")
+        name = result.get("name", {}).get("value", "None")
+        address = result.get("address", {}).get("value", "None")
+        description = result.get("description", {}).get("value", "None")
+        depiction = result.get("depiction", {}).get("value", "None")
+        # 이미지 객체 생성
+        image = ImageBase(img_url=depiction)
+
+        # PlaceInfo 객체 생성
+        place = PlaceInfo(
+            name=name,
+            address=address,
+            description=description,
+            images=[image],  # 이미지 리스트에 추가
+        )
+
+        # 결과 리스트에 PlaceInfo 객체 추가
+        response.append(place)
+    return response
 
 
 async def execute_sparql_query(query: str) -> dict:

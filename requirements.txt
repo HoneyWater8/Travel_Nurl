@@ -22,11 +22,11 @@ pillow
 matplotlib
 aiohttp
 mecab-python3
-# scikit-learn
-# konlpy
-# opencv-python
-# retina-face
-# tf-keras
-# torch==2.4.0  # 호환되는 버전으로 설정
-# torchvision==0.19.0  # 호환되는 torchvision 버전
-# --extra-index-url https://download.pytorch.org/whl/cu118
+pinecone-client
+konlpy
+opencv-python
+retina-face
+tf-keras
+torch==2.4.0  # 호환되는 버전으로 설정
+torchvision==0.19.0  # 호환되는 torchvision 버전
+--extra-index-url https://download.pytorch.org/whl/cu118
