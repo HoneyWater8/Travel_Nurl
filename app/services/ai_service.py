@@ -14,7 +14,7 @@ from app.cosmosdb import (
     cosmos_database_name,
     image_container_name,
 )
-from pinecone import Pinecone, ServerlessSpec
+from pinecone import Pinecone
 from app.core.config import pinecone_settins
 
 
