@@ -2,7 +2,7 @@ import random
 from azure.cosmos import CosmosClient
 from app.cosmosdb import (
     get_cosmos_client,
-    get_blob_container_client,
+    get_blob_image_container_client,
     cosmos_database_name,
     image_container_name,
 )
@@ -17,7 +17,7 @@ class PlaceService:
         self.cosmos_client = get_cosmos_client()
         self.database = self.cosmos_client.get_database_client(cosmos_database_name)
         self.container = self.database.get_container_client(image_container_name)
-        self.blob_container_client = get_blob_container_client()
+        self.blob_image_client = get_blob_image_container_client()
 
     # 무작위 이미지 5개 가져오기
     async def get_random_images(self, num: int):

@@ -1,3 +1,5 @@
+import io
+from typing import Optional
 import numpy as np
 import torch
 import cv2
@@ -9,13 +11,15 @@ from konlpy.tag import Okt
 from pathlib import Path
 from app.cosmosdb import (
     get_cosmos_client,
-    get_blob_container_client,
-    get_blob_container_client2,
+    get_blob_image_container_client,
     cosmos_database_name,
     image_container_name,
 )
 from pinecone import Pinecone
 from app.core.config import pinecone_settins
+from app.schemas.place import Place_detail, blur_place
+from app.services.data_visitkorea import search_place
+import base64
 
 
 class ImageAIService:
@@ -23,8 +27,7 @@ class ImageAIService:
         self.cosmos_client = get_cosmos_client()
         self.database = self.cosmos_client.get_database_client(cosmos_database_name)
         self.image_container = self.database.get_container_client(image_container_name)
-        self.blob_container_client = get_blob_container_client()
-        self.blob_container_client2 = get_blob_container_client2()
+        self.blob_image_container_client = get_blob_image_container_client()
         self.resnet50_model = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.preprocess = self._get_preprocess_transform()
@@ -118,7 +121,61 @@ class ImageAIService:
                 mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
                 img_array[y1:y2, x1:x2] += mask_face
 
-        return Image.fromarray(img_array)
+            result_image = Image.fromarray(img_array)
+
+            # 바이트 스트림으로 변환
+            img_io = io.BytesIO()
+            result_image.save(img_io, "JPEG")  # 또는 'PNG' 등 원하는 포맷
+            img_io.seek(0)
+
+            return img_io.getvalue()
+
+    # Blob Storage에서 이미지를 다운로드하여 유사도 점수에 따라 정렬된 순서로 시각화하는 함수
+    async def get_place_info(
+        self,
+        top_image_ids: list,
+    ):
+        places = []
+
+        for i, image_id in enumerate(top_image_ids):
+            image_id = int(image_id)
+            query = (
+                f"SELECT c.ImageName , c.PlaceName FROM c WHERE c.ImageID = {image_id}"
+            )
+            items = list(
+                self.image_container.query_items(
+                    query, enable_cross_partition_query=True
+                )
+            )
+
+            if items:
+                image_name = items[0]["ImageName"]
+                place_name = items[0]["PlaceName"]
+                print(f"Downloading and displaying image: {image_name}")
+                # URL 인코딩
+                blob_client = self.blob_image_container_client.get_blob_client(
+                    image_name
+                )
+                blob_data = blob_client.download_blob().readall()
+                image = Image.open(io.BytesIO(blob_data))
+
+                # 얼굴 블러 처리 적용
+                image = self.blur_faces(image)
+                place: Optional[Place_detail] = await search_place(place_name)
+                if place:
+                    # Place_detail을 기반으로 blur_place 생성
+                    place = blur_place(**place.model_dump())  # unpacking 사용
+                    if image:
+                        place.blur_image = base64.b64encode(image).decode(
+                            "utf-8"
+                        )  # 바이너리 데이터를 Base64로 변환
+
+                # 유사도 점수 및 추가 정보 표시
+                places.append(place)
+            else:
+                print(f"No image found for ImageID: {image_id}")
+                return
+        return places
 
     async def find_similar_image(
         self,
@@ -219,10 +276,4 @@ class ImageAIService:
         for image_id, score in zip(top_image_ids, top_N_scores):
             print(f"ImageID: {image_id}, Similarity Score: {score}")
 
-        return {
-            "top_image_ids": top_image_ids,
-            "top_N_scores": top_N_scores,
-            "place_ids": place_ids,
-            "region_ids": region_ids,
-            "category_ids": category_ids,
-        }
+        return await self.get_place_info(top_image_ids)

@@ -1,6 +1,7 @@
+from typing import Optional
 from fastapi import HTTPException
 from SPARQLWrapper import SPARQLWrapper, JSON
-from app.schemas.place import PlaceInfo, ImageBase
+from app.schemas.place import PlaceInfo, ImageBase, Place_detail
 
 SPARQL_ENDPOINT = "http://data.visitkorea.or.kr/sparql"
 
@@ -21,7 +22,7 @@ PREFIX = """    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 """
 
 
-async def search_place(place_name: str) -> dict:
+async def search_place(place_name: str) -> Optional[Place_detail]:
     query = f"""
 
 SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
@@ -41,7 +42,35 @@ WHERE {{
 }}
 GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
 """
-    return await execute_sparql_query(query)
+
+    try:
+        data = await execute_sparql_query(query)
+
+        if not data["results"]["bindings"]:
+            return None  # 결과가 없으면 None 반환
+
+        result = data["results"]["bindings"][0]
+        depictions = result.get("depictions", {}).get("value", "")
+        images = [
+            ImageBase(img_url=img_url.strip())
+            for img_url in depictions.split(", ")
+            if img_url
+        ]
+
+        return Place_detail(
+            name=result.get("name", {}).get("value", "정보 없음"),
+            address=result.get("address", {}).get("value", "정보 없음"),
+            parking=result.get("parking", {}).get("value", "정보 없음"),
+            petsAvailable=result.get("petsAvailable", {}).get("value", "정보 없음"),
+            tel=result.get("tel", {}).get("value", "정보 없음"),
+            x=result.get("lat", {}).get("value", "정보 없음"),
+            y=result.get("long", {}).get("value", "정보 없음"),
+            images=images,
+        )
+    except Exception as e:
+        # 에러 로그 추가
+        print(f"Error in search_place: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def search_places(num: int = 1):
