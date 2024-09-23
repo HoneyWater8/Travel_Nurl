@@ -15,7 +15,7 @@ python-multipart
 gunicorn
 pydantic[email]
 itsdangerous
-bcrypt
+passlib
 numpy
 pandas
 pillow
