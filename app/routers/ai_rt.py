@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.ai_service import ImageAIService
 import tempfile
 import os
-import pinecone
+
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 image_ai = ImageAIService()
@@ -23,8 +23,8 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
             temp_file.write(await user_image.read())
             temp_image_path = temp_file.name
 
-        # 유사 이미지 찾기
-        image = await image_ai.find_similar_image(
+        # 유사 장소 찾기
+        place = await image_ai.find_similar_image(
             user_image_path=temp_image_path,
             user_text=user_text,
             region_id=region_ids,
@@ -35,9 +35,4 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    finally:
-        # 임시 파일 삭제
-        if temp_image_path and os.path.exists(temp_image_path):
-            os.remove(temp_image_path)
-
-    return image
+    return place

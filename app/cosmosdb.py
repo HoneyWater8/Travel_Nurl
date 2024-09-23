@@ -12,6 +12,7 @@ load_dotenv(dotenv_path="config.env")  # .env 파일의 환경 변수를 로드�
 cosmos_database_name = "ImageDatabase"  # 사용할 Cosmos DB 데이터베이스 이름
 image_container_name = "ImageTable"  # 사용할 Cosmos DB 컨테이너 이름
 embedding_container_name = "embedding-container-travelnuri"
+blob_image_container_name = "image-container-travelnuri"
 
 
 ## CLient를 가져오는 메소드
@@ -41,12 +42,6 @@ def get_blob_service_client() -> BlobServiceClient:
 
 
 ## 컨테이너를 가져오는 메서드
-def get_blob_container_client() -> ContainerClient:
+def get_blob_image_container_client() -> ContainerClient:
     blob_service_client = get_blob_service_client()
-    return blob_service_client.get_container_client(image_container_name)
-
-
-## 컨테이너를 가져오는 메서드
-def get_blob_container_client2() -> ContainerClient:
-    blob_service_client = get_blob_service_client()
-    return blob_service_client.get_container_client(embedding_container_name)
+    return blob_service_client.get_container_client(blob_image_container_name)
