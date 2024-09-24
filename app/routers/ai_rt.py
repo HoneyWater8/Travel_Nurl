@@ -2,10 +2,11 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from app.services.ai_service import ImageAIService
 import tempfile
 import os
-
+from app.services.place_service import PlaceService
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 image_ai = ImageAIService()
+place_service = PlaceService()
 
 
 @router.post("/find-similar-image/")
@@ -34,5 +35,10 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        # 임시 파일 삭제
+        if os.path.exists(temp_image_path):
+            os.remove(temp_image_path)
 
     return place
