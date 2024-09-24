@@ -11,7 +11,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from app.core.config import base_settings
 
-
 app = FastAPI()
 
 session_key = base_settings.SERVICE_KEY
@@ -54,3 +53,14 @@ def ping_mongodb_endpoint():
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the FastAPI application!"}
+
+
+@app.get("/health")
+async def health_check():
+    # MongoDB 상태 검사
+    try:
+        await ping_mongodb()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"MongoDB Unhealthy: {str(e)}")
+
+    return {"status": "healthy"}

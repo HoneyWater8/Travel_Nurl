@@ -16,17 +16,18 @@ python-multipart
 gunicorn
 pydantic[email]
 itsdangerous
-numpy
+numpy>=1.14.0
 pandas
-pillow
+Pillow>=5.2.0
 matplotlib
 aiohttp
 mecab-python3
 pinecone-client
 konlpy
-opencv-python
-tf-keras
+opencv-python>=3.4.4
 retina-face
+tf-keras
+tensorflow>=1.9.0
 torch==2.4.0
 torchvision==0.19.0
 --extra-index-url https://download.pytorch.org/whl/cu118

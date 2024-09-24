@@ -11,9 +11,10 @@ from konlpy.tag import Okt
 from pathlib import Path
 from app.cosmosdb import (
     get_cosmos_client,
-    get_blob_image_container_client,
+    get_blob_container_client,
     cosmos_database_name,
     image_container_name,
+    blob_image_container_name,
 )
 from pinecone import Pinecone
 from app.core.config import pinecone_settins
@@ -27,7 +28,9 @@ class ImageAIService:
         self.cosmos_client = get_cosmos_client()
         self.database = self.cosmos_client.get_database_client(cosmos_database_name)
         self.image_container = self.database.get_container_client(image_container_name)
-        self.blob_image_container_client = get_blob_image_container_client()
+        self.blob_image_container_client = get_blob_container_client(
+            blob_image_container_name
+        )
         self.resnet50_model = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.preprocess = self._get_preprocess_transform()
@@ -36,7 +39,7 @@ class ImageAIService:
         self.pinecone_index = self.pc.Index(pinecone_settins.index_name)
         self.okt = Okt()
 
-    def _load_model(self):
+    async def _load_model(self):
         if self.resnet50_model is None:
             self.resnet50_model = models.resnet50(weights="DEFAULT").to(self.device)
             self.resnet50_model.eval()
@@ -54,7 +57,7 @@ class ImageAIService:
         )
 
     async def get_image_features(self, image_path):
-        self._load_model()
+        await self._load_model()
         try:
             image = Image.open(image_path).convert("RGB")
         except IOError as e:

@@ -42,6 +42,6 @@ def get_blob_service_client() -> BlobServiceClient:
 
 
 ## 컨테이너를 가져오는 메서드
-def get_blob_image_container_client() -> ContainerClient:
+def get_blob_container_client(blob_container_name: str) -> ContainerClient:
     blob_service_client = get_blob_service_client()
-    return blob_service_client.get_container_client(blob_image_container_name)
+    return blob_service_client.get_container_client(blob_container_name)

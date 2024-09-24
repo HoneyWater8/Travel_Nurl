@@ -2,7 +2,7 @@ import random
 from azure.cosmos import CosmosClient
 from app.cosmosdb import (
     get_cosmos_client,
-    get_blob_image_container_client,
+    get_blob_container_client,
     cosmos_database_name,
     image_container_name,
 )
@@ -17,7 +17,7 @@ class PlaceService:
         self.cosmos_client = get_cosmos_client()
         self.database = self.cosmos_client.get_database_client(cosmos_database_name)
         self.container = self.database.get_container_client(image_container_name)
-        self.blob_image_client = get_blob_image_container_client()
+        self.blob_containter_client = None
 
     # 무작위 이미지 5개 가져오기
     async def get_random_images(self, num: int):
@@ -71,3 +71,16 @@ class PlaceService:
             raise HTTPException(
                 status_code=500, detail=str(e)
             )  # 일반 오류는 500으로 처리
+
+    # # 장소 검색한 검색 이미지 저장
+    # async def upload_searched_image(self, filename: str ):
+
+    #         # 사용자별 컨테이너 이름
+    #     user_container_name = f"user-{user_id}"
+
+    #      # 사용자 컨테이너가 존재하지 않으면 생성
+    #     try:
+    #         blob_service_client.create_container(user_container_name)
+    #     except Exception as e:
+    #         if "ContainerAlreadyExists" not in str(e):
+    #             raise HTTPException(status_code=500, detail="Container creation failed")
