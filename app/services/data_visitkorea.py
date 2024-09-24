@@ -58,13 +58,13 @@ GROUP BY ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long
         ]
 
         return Place_detail(
-            name=result.get("name", {}).get("value", "정보 없음"),
+            name=result.get("name", {}).get("value", place_name),
             address=result.get("address", {}).get("value", "정보 없음"),
             parking=result.get("parking", {}).get("value", "정보 없음"),
             petsAvailable=result.get("petsAvailable", {}).get("value", "정보 없음"),
             tel=result.get("tel", {}).get("value", "정보 없음"),
-            x=result.get("lat", {}).get("value", "정보 없음"),
-            y=result.get("long", {}).get("value", "정보 없음"),
+            x=result.get("lat", {}).get("value", 0.000),
+            y=result.get("long", {}).get("value", 0.000),
             images=images,
         )
     except Exception as e:
