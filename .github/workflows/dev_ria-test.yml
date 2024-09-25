@@ -95,3 +95,9 @@ jobs:
           COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
           COSMOS_BLOB_CONNECTION_KEY: ${{ secrets.COSMOS_BLOB_CONNECTION_KEY }}
           COSMOS_END_POINT: ${{ secrets.COSMOS_END_POINT }}
+      - name: Cleanup
+        run: |
+            echo "Cleaning up..."
+            rm -rf venv
+            rm release.zip
+
