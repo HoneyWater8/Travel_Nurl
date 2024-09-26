@@ -29,8 +29,6 @@ jobs:
       - name: Install dependencies
         run: |
           source venv/bin/activate
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-glx
           pip install --upgrade pip
           pip install -r requirements.txt
           
@@ -95,9 +93,9 @@ jobs:
           COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
           COSMOS_BLOB_CONNECTION_KEY: ${{ secrets.COSMOS_BLOB_CONNECTION_KEY }}
           COSMOS_END_POINT: ${{ secrets.COSMOS_END_POINT }}
+
       - name: Cleanup
         run: |
             echo "Cleaning up..."
             rm -rf venv
             rm release.zip
-
