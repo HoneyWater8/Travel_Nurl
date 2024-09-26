@@ -153,16 +153,16 @@ class UserService:
             response = await client.post(url, data=payload)
         return response.json()
 
-    async def refreshAccessToken(self, form_data: OAuth2PasswordRequestForm):
-        user = fake_users_db.get(form_data.username)
-        if not user or not verify_password(form_data.password, user["hashed_password"]):
-            raise HTTPException(
-                status_code=400, detail="Incorrect username or password"
-            )
+    # async def refreshAccessToken(self, form_data: OAuth2PasswordRequestForm):
+    #     user = fake_users_db.get(form_data.username)
+    #     if not user or not verify_password(form_data.password, user["hashed_password"]):
+    #         raise HTTPException(
+    #             status_code=400, detail="Incorrect username or password"
+    #         )
 
-        access_token = create_access_token(data={"sub": form_data.username})
-        return {"access_token": access_token, "token_type": "bearer"}
+    #     access_token = create_access_token(data={"sub": form_data.username})
+    #     return {"access_token": access_token, "token_type": "bearer"}
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(url, data=payload)
-        return response.json()
+    #     async with httpx.AsyncClient() as client:
+    #         response = await client.post(url, data=payload)
+    #     return response.json()
