@@ -63,7 +63,12 @@ jobs:
         with:
           java-version: '11'
           distribution: 'adopt'
-
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ runner.tool_cache }}/Java_Adopt_jdk/11.0.24-8/x64" >> $GITHUB_ENV
+  
+      - name: Verify Java installation
+        run: java -version  # Java 버전 확인
+        
       - name: Unzip artifact for deployment
         run: unzip release.zip
 
