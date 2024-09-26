@@ -1,13 +1,13 @@
-from fastapi import APIRouter, HTTPException, Request, Form
+from fastapi import APIRouter, HTTPException, Request, Form,Depends
 from fastapi.responses import RedirectResponse
-from fastapi.security import OAuth2AuthorizationCodeBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.services.user_service import UserService
 from app.schemas.user import UserCreate, UserInKakao, UserLogin
 from starlette.requests import Request
 from starlette.responses import RedirectResponse
 
 router = APIRouter(prefix="/user", tags=["user"])
-
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 userService = UserService()
 
 
@@ -119,6 +119,14 @@ async def refresh_token(refresh_token: str = Form(...)):
     """Kakao 토큰 재발급 API"""
     return await userService.refreshAccessToken_kakao(refresh_token)
 
+@router.post("/token")
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = fake_users_db.get(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+    access_token = create_access_token(data={"sub": form_data.username})
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.get("/me")
 async def get_current_user(request: Request):

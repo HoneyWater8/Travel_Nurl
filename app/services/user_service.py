@@ -1,6 +1,7 @@
 from passlib.context import CryptContext
 from app.database import database
 from datetime import datetime
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from app.schemas.user import UserCreate, UserInKakao, User
 from app.models.user import UserInDB, KakaoUserInDB
 from fastapi import HTTPException
@@ -147,6 +148,20 @@ class UserService:
             "client_id": self.kakao_client_id,
             "refresh_token": refresh_token,
         }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, data=payload)
+        return response.json()
+
+    async def refreshAccessToken(self, form_data: OAuth2PasswordRequestForm):
+        user = fake_users_db.get(form_data.username)
+        if not user or not verify_password(form_data.password, user["hashed_password"]):
+            raise HTTPException(
+                status_code=400, detail="Incorrect username or password"
+            )
+
+        access_token = create_access_token(data={"sub": form_data.username})
+        return {"access_token": access_token, "token_type": "bearer"}
 
         async with httpx.AsyncClient() as client:
             response = await client.post(url, data=payload)
