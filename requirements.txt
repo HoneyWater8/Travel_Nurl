@@ -17,10 +17,7 @@ gunicorn
 pydantic[email]
 itsdangerous
 numpy>=1.14.0
-pandas
-matplotlib
 aiohttp
-mecab-python3
 pinecone-client
 konlpy
 torch==2.4.0
