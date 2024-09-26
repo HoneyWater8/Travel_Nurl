@@ -1,9 +1,5 @@
-import io
 from typing import Optional
-import numpy as np
 import torch
-import cv2
-from retinaface import RetinaFace
 from PIL import Image
 import torchvision.models as models
 import torchvision.transforms as transforms
@@ -20,7 +16,6 @@ from pinecone import Pinecone
 from app.core.config import pinecone_settins
 from app.schemas.place import Place_detail, blur_place
 from app.services.data_visitkorea import search_place
-import base64
 
 
 class ImageAIService:
@@ -87,51 +82,51 @@ class ImageAIService:
             word for word in nouns_and_adjectives if word not in stopwords
         )  # 불용어 제외
 
-    def blur_faces(self, image):
-        img_array = np.array(image)
+    # def blur_faces(self, image):
+    #     img_array = np.array(image)
 
-        # RetinaFace를 사용하여 얼굴 감지
-        faces = RetinaFace.detect_faces(img_array)
+    #     # RetinaFace를 사용하여 얼굴 감지
+    #     faces = RetinaFace.detect_faces(img_array)
 
-        if isinstance(faces, dict):  # 감지된 얼굴이 있을 경우
-            for face_key in faces.keys():
-                face = faces[face_key]
-                facial_area = face["facial_area"]
-                x1, y1, x2, y2 = facial_area
+    #     if isinstance(faces, dict):  # 감지된 얼굴이 있을 경우
+    #         for face_key in faces.keys():
+    #             face = faces[face_key]
+    #             facial_area = face["facial_area"]
+    #             x1, y1, x2, y2 = facial_area
 
-                # 얼굴 중심점과 크기 계산
-                center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
-                width, height = x2 - x1, y2 - y1
+    #             # 얼굴 중심점과 크기 계산
+    #             center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
+    #             width, height = x2 - x1, y2 - y1
 
-                # 원형 또는 타원형 마스크 생성 (이 예제에서는 타원형)
-                mask = np.zeros_like(img_array, dtype=np.uint8)
-                mask = cv2.ellipse(
-                    mask,
-                    (center_x, center_y),
-                    (width // 2, height // 2),
-                    0,
-                    0,
-                    360,
-                    (255, 255, 255),
-                    -1,
-                )
+    #             # 원형 또는 타원형 마스크 생성 (이 예제에서는 타원형)
+    #             mask = np.zeros_like(img_array, dtype=np.uint8)
+    #             mask = cv2.ellipse(
+    #                 mask,
+    #                 (center_x, center_y),
+    #                 (width // 2, height // 2),
+    #                 0,
+    #                 0,
+    #                 360,
+    #                 (255, 255, 255),
+    #                 -1,
+    #             )
 
-                # 블러 처리된 얼굴 영역
-                blurred_face = cv2.GaussianBlur(img_array[y1:y2, x1:x2], (99, 99), 30)
+    #             # 블러 처리된 얼굴 영역
+    #             blurred_face = cv2.GaussianBlur(img_array[y1:y2, x1:x2], (99, 99), 30)
 
-                # 원형 또는 타원형 마스크를 적용하여 블러 처리된 얼굴과 원본 이미지 합성
-                img_array = cv2.bitwise_and(img_array, 255 - mask)
-                mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
-                img_array[y1:y2, x1:x2] += mask_face
+    #             # 원형 또는 타원형 마스크를 적용하여 블러 처리된 얼굴과 원본 이미지 합성
+    #             img_array = cv2.bitwise_and(img_array, 255 - mask)
+    #             mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
+    #             img_array[y1:y2, x1:x2] += mask_face
 
-            result_image = Image.fromarray(img_array)
+    #         result_image = Image.fromarray(img_array)
 
-            # 바이트 스트림으로 변환
-            img_io = io.BytesIO()
-            result_image.save(img_io, "JPEG")  # 또는 'PNG' 등 원하는 포맷
-            img_io.seek(0)
+    #         # 바이트 스트림으로 변환
+    #         img_io = io.BytesIO()
+    #         result_image.save(img_io, "JPEG")  # 또는 'PNG' 등 원하는 포맷
+    #         img_io.seek(0)
 
-            return img_io.getvalue()
+    #         return img_io.getvalue()
 
     # Blob Storage에서 이미지를 다운로드하여 유사도 점수에 따라 정렬된 순서로 시각화하는 함수
     async def get_place_info(
@@ -159,22 +154,20 @@ class ImageAIService:
                 blob_client = self.blob_image_container_client.get_blob_client(
                     image_name
                 )
-                blob_data = blob_client.download_blob().readall()
-                image = Image.open(io.BytesIO(blob_data))
-
-                # 얼굴 블러 처리 적용
-                image = self.blur_faces(image)
-                place: Optional[Place_detail] = await search_place(place_name)
-                if place:
-                    # Place_detail을 기반으로 blur_place 생성
-                    place = blur_place(**place.model_dump())  # unpacking 사용
-                    if image:
-                        place.blur_image = base64.b64encode(image).decode(
-                            "utf-8"
-                        )  # 바이너리 데이터를 Base64로 변환
-
-                # 유사도 점수 및 추가 정보 표시
-                places.append(place)
+                try:
+                    blob_client.get_blob_properties()  # Blob의 속성을 가져와서 존재 여부 확인
+                    place: Optional[Place_detail] = await search_place(place_name)
+                    if place:
+                        place = blur_place(**place.model_dump())  # unpacking 사용
+                        place.blur_image = blob_client.url
+                    # 유사도 점수 및 추가 정보 표시
+                    places.append(place)
+                except Exception as e:
+                    print(f"Blob not found or error occurred: {e}")
+                    if place:
+                        place = blur_place(**place.model_dump())  # unpacking 사용
+                        place.blur_image = None  # Blob이 없으면 None 할당
+                    places.append(place)
             else:
                 print(f"No image found for ImageID: {image_id}")
                 return

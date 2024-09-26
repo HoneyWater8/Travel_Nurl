@@ -9,6 +9,8 @@ uri = mongo_settings.DB_URL
 client = AsyncIOMotorClient(uri, server_api=ServerApi("1"))
 database = client["Test"]
 user_collection = database["test"]
+search_history_collection = database["search_history"]
+favorite_collection = database["favorite"]
 
 
 # Send a ping to confirm a successful connection

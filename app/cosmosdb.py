@@ -13,6 +13,7 @@ cosmos_database_name = "ImageDatabase"  # 사용할 Cosmos DB 데이터베이스
 image_container_name = "ImageTable"  # 사용할 Cosmos DB 컨테이너 이름
 embedding_container_name = "embedding-container-travelnuri"
 blob_image_container_name = "image-container-travelnuri"
+blob_record_container_name = "record-container-travelnuri"
 
 
 ## CLient를 가져오는 메소드

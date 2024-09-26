@@ -22,7 +22,7 @@ PREFIX = """    PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 """
 
 
-async def search_place(place_name: str) -> Optional[Place_detail]:
+async def search_place(place_name: str, image_num: int = 5) -> Optional[Place_detail]:
     query = f"""
 
 SELECT ?name ?address ?petsAvailable ?tel ?creditCard ?parking ?lat ?long (GROUP_CONCAT(?depiction; separator=", ") AS ?depictions)
