@@ -1,21 +1,22 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException,Request
 from app.services.ai_service import ImageAIService
 import tempfile
 import os
-from app.services.place_service import PlaceService
+from app.services.record_service import RecordService
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 image_ai = ImageAIService()
-place_service = PlaceService()
+record_service = RecordService()
 
 
 @router.post("/find-similar-image/")
-async def find_similar_image(user_image: UploadFile = File(...), user_text: str = None, region_ids: str = None, category_ids: str = None, top_N: int = 5):  # type: ignore
+async def find_similar_image(user_image: UploadFile = File(...), request: Request, user_text: str = None, region_ids: str = None, category_ids: str = None, top_N: int = 5):  # type: ignore
 
-    data = {"similar_places": []}
+    user = request.session.get('user', {'username': 'guest'})  
 
     # 사용자 이미지 임시 파일 저장
     try:
+        await record_service.upload_photo()
         # 파일 이름이 None일 경우 기본 이름 설정
         filename = user_image.filename if user_image.filename else "user_image"
         suffix = os.path.splitext(filename)[1]  # 파일 확장자 추출
@@ -32,7 +33,7 @@ async def find_similar_image(user_image: UploadFile = File(...), user_text: str 
             category_id=category_ids,
             top_N=top_N,
         )
-
+        await record_service.save_search_history(user['username'], user_image)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
