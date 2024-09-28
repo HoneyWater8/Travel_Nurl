@@ -4,6 +4,7 @@ __pycache__/
 *.pyo
 *.pyd
 
+
 # 가상 환경
 venv/
 env/
@@ -39,3 +40,4 @@ package
 app/AI/*.md
 app/AI/*.py
 fastapi_lambda.zip
+.dockerignore
