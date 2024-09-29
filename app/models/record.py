@@ -1,19 +1,12 @@
-from pydantic import BaseModel
 from datetime import datetime
+from app.models.place import ImageBase, blur_place
 
 
-class PhotoMetadata(BaseModel):
-    filename: str
+class SearchHistory(ImageBase):
+    user_id: str
     timestamp: datetime
 
 
-class SearchHistory(BaseModel):
+class Favorites(blur_place):
     user_id: str
-    query: str
-    timestamp: datetime
-
-
-class Favorites(BaseModel):
-    user_id: str
-    filename: str
     timestamp: datetime

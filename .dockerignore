@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-
+.env 
 
 # 가상 환경
 venv/
@@ -39,4 +39,7 @@ package
 *.temp
 app/AI/*.md
 app/AI/*.py
+fastapi_lambda.zip
+startup.sh
+Dockerfile.dev
 uploads/

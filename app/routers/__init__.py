@@ -6,3 +6,4 @@ from .external_rt import router as external_router
 from .visitkorea_rt import router as visitkorea_router
 from .place_rt import router as place_router
 from .ai_rt import router as ai_router
+from .history_rt import router as history_router
