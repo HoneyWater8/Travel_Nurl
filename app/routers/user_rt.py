@@ -22,11 +22,11 @@ async def Oklogout():
 
 @router.post("/login")
 async def login(
-    request: Request, userIdorEmail: str = Form(...), password: str = Form(...)
+    request: Request, identifier: str = Form(...), password: str = Form(...)
 ):
     """로그인 API (이메일 또는 아이디)"""
     # 아이디 또는 이메일로 사용자 인증
-    user_info = await userService.authenticate_user(userIdorEmail, password)
+    user_info = await userService.authenticate_user(identifier, password)
     if not user_info:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 

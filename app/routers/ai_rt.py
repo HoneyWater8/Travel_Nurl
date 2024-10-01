@@ -10,7 +10,7 @@ record_service = RecordService()
 
 
 @router.post("/find-similar-image/")
-async def find_similar_image(request: Request, user_image: UploadFile = File(...), user_text: str = None, region_ids: str = None, category_ids: str = None, top_N: int = 5):  # type: ignore
+async def find_similar_image(request: Request, user_image: UploadFile, user_text: str = None, region_ids: str = None, category_ids: str = None, top_N: int = 5):  # type: ignore
     """
     ### 입력 파라미터
 
@@ -59,32 +59,32 @@ async def find_similar_image(request: Request, user_image: UploadFile = File(...
 
     # 사용자 이미지 임시 파일 저장
     try:
-
-        # 파일 이름이 None일 경우 기본 이름 설정
-        filename = user_image.filename if user_image.filename else "user_image"
-        suffix = os.path.splitext(filename)[1]  # 파일 확장자 추출
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-            temp_file.write(await user_image.read())
-            temp_image_path = temp_file.name
-
-        # 유사 장소 찾기
-        place = await image_ai.find_similar_image(
-            user_image_path=temp_image_path,
-            user_text=user_text,
-            region_id=region_ids,
-            category_id=category_ids,
-            top_N=top_N,
-        )
-
+        temp_image_path = ""
         if user != "guest":
-            await record_service.save_search_history(user.get("id"), user_image)
+            temp_image_path = await record_service.save_search_history(
+                user.get("id"), user_image
+            )
+
+        # with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        #     temp_file.write(await user_image.read())
+        #     temp_image_path = temp_file.name
+
+        if temp_image_path:
+            # 유사 장소 찾기
+            place = await image_ai.find_similar_image(
+                user_image_path=temp_image_path,
+                user_text=user_text,
+                region_id=region_ids,
+                category_id=category_ids,
+                top_N=top_N,
+            )
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
         # 임시 파일 삭제
-        if os.path.exists(temp_image_path):
+        if temp_image_path and os.path.exists(temp_image_path):
             os.remove(temp_image_path)
 
     return place

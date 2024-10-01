@@ -82,13 +82,11 @@ class RecordService:
                     "$addToSet": {"history": search_history.model_dump()}
                 },  # 중복 추가 방지
             )
+            return temp_file_path
 
         except Exception as e:
             print(f"Error uploading file: {e}")
-        finally:
-            # 임시 파일 삭제 (필요시)
-            if os.path.exists(temp_file_path):
-                os.remove(temp_file_path)
+
 
     async def get_search_history(self, user_id: str):
         mongo_history = await favorite_collection.find_one(

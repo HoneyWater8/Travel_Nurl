@@ -27,7 +27,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://www.travelnuri.site",
+        "https://www.travelnuri.site",
+        "http://www.travelnuri.site"
     ],  # 허용할 출처
     allow_credentials=True,
     allow_methods=["*"],
