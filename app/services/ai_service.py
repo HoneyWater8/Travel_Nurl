@@ -82,52 +82,6 @@ class ImageAIService:
             word for word in nouns_and_adjectives if word not in stopwords
         )  # 불용어 제외
 
-    # def blur_faces(self, image):
-    #     img_array = np.array(image)
-
-    #     # RetinaFace를 사용하여 얼굴 감지
-    #     faces = RetinaFace.detect_faces(img_array)
-
-    #     if isinstance(faces, dict):  # 감지된 얼굴이 있을 경우
-    #         for face_key in faces.keys():
-    #             face = faces[face_key]
-    #             facial_area = face["facial_area"]
-    #             x1, y1, x2, y2 = facial_area
-
-    #             # 얼굴 중심점과 크기 계산
-    #             center_x, center_y = (x1 + x2) // 2, (y1 + y2) // 2
-    #             width, height = x2 - x1, y2 - y1
-
-    #             # 원형 또는 타원형 마스크 생성 (이 예제에서는 타원형)
-    #             mask = np.zeros_like(img_array, dtype=np.uint8)
-    #             mask = cv2.ellipse(
-    #                 mask,
-    #                 (center_x, center_y),
-    #                 (width // 2, height // 2),
-    #                 0,
-    #                 0,
-    #                 360,
-    #                 (255, 255, 255),
-    #                 -1,
-    #             )
-
-    #             # 블러 처리된 얼굴 영역
-    #             blurred_face = cv2.GaussianBlur(img_array[y1:y2, x1:x2], (99, 99), 30)
-
-    #             # 원형 또는 타원형 마스크를 적용하여 블러 처리된 얼굴과 원본 이미지 합성
-    #             img_array = cv2.bitwise_and(img_array, 255 - mask)
-    #             mask_face = cv2.bitwise_and(blurred_face, mask[y1:y2, x1:x2])
-    #             img_array[y1:y2, x1:x2] += mask_face
-
-    #         result_image = Image.fromarray(img_array)
-
-    #         # 바이트 스트림으로 변환
-    #         img_io = io.BytesIO()
-    #         result_image.save(img_io, "JPEG")  # 또는 'PNG' 등 원하는 포맷
-    #         img_io.seek(0)
-
-    #         return img_io.getvalue()
-
     # Blob Storage에서 이미지를 다운로드하여 유사도 점수에 따라 정렬된 순서로 시각화하는 함수
     async def get_place_info(
         self,

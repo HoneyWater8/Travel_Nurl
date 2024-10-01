@@ -7,11 +7,13 @@ passlib==1.7.4
 bcrypt
 pymongo==4.8.0
 pytest==8.3.2
+pytest-asyncio
 python-dotenv
 PyYAML==6.0.2
 SPARQLWrapper==2.0.0
 starlette==0.38.5
 uvicorn
+JPype1
 python-multipart
 gunicorn
 pydantic[email]

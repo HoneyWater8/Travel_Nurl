@@ -71,16 +71,3 @@ class PlaceService:
             raise HTTPException(
                 status_code=500, detail=str(e)
             )  # 일반 오류는 500으로 처리
-
-    # # 장소 검색한 검색 이미지 저장
-    # async def upload_searched_image(self, filename: str ):
-
-    #         # 사용자별 컨테이너 이름
-    #     user_container_name = f"user-{user_id}"
-
-    #      # 사용자 컨테이너가 존재하지 않으면 생성
-    #     try:
-    #         blob_service_client.create_container(user_container_name)
-    #     except Exception as e:
-    #         if "ContainerAlreadyExists" not in str(e):
-    #             raise HTTPException(status_code=500, detail="Container creation failed")

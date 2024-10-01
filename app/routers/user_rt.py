@@ -21,10 +21,12 @@ async def Oklogout():
 
 
 @router.post("/login")
-async def login(request: Request, user: UserLogin):
+async def login(
+    request: Request, identifier: str = Form(...), password: str = Form(...)
+):
     """로그인 API (이메일 또는 아이디)"""
     # 아이디 또는 이메일로 사용자 인증
-    user_info = await userService.authenticate_user(user.identifier, user.password)
+    user_info = await userService.authenticate_user(identifier, password)
     if not user_info:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
@@ -118,16 +120,6 @@ async def logout(request: Request):
 async def refresh_token(refresh_token: str = Form(...)):
     """Kakao 토큰 재발급 API"""
     return await userService.refreshAccessToken_kakao(refresh_token)
-
-
-""" @router.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = fake_users_db.get(form_data.username)
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-    access_token = create_access_token(data={"sub": form_data.username})
-    return {"access_token": access_token, "token_type": "bearer"} """
 
 
 @router.get("/me")

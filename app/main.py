@@ -5,6 +5,7 @@ from app.routers import (
     place_router,
     visitkorea_router,
     ai_router,
+    history_router,
 )
 from app.database import ping_mongodb
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,14 +25,19 @@ app.add_middleware(SessionMiddleware, secret_key=session_key)
 ## 다른 도메인에서 호스팅되는 리소스에 접근할 수 있도록 하기 위함.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # 허용할 출처
+    allow_origins=[
+        "http://localhost:3000",
+        "https://www.travelnuri.site",
+        "http://www.travelnuri.site"
+    ],  # 허용할 출처
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # 라우터 포함
-app.include_router(ai_router)  # 다른 기능 만들 때까지 정지.
+app.include_router(history_router)
+app.include_router(ai_router)
 app.include_router(external_router)  # 외부 API 라우터 포함
 app.include_router(place_router)
 app.include_router(user_router)
